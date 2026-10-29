@@ -4,6 +4,7 @@ import type { ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { logger } from './config/logger.ts';
+import { pingDatabase } from './db/pool.ts';
 
 export const app = express();
 
@@ -17,7 +18,7 @@ app.use(
       res.setHeader('X-Request-Id', id);
       return id;
     },
-    autoLogging: { ignore: (req) => req.url === '/health' },
+    autoLogging: { ignore: (req) => req.url === '/health' || req.url === '/ready' },
   })
 );
 app.use(helmet());
@@ -25,6 +26,17 @@ app.use(express.json({ limit: '100kb' }));
 
 app.get('/health', (_req, res) => {
   res.set('Cache-Control', 'no-store').json({ status: 'ok' });
+});
+
+app.get('/ready', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    await pingDatabase();
+    res.json({ status: 'ok', database: 'ok' });
+  } catch (error) {
+    req.log.warn({ err: error }, 'Readiness check failed');
+    res.status(503).json({ status: 'unavailable', database: 'unreachable' });
+  }
 });
 
 app.use((_req, res) => {

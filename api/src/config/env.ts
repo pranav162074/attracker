@@ -4,6 +4,9 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  DATABASE_URL: z.string().url().refine((value) => /^postgres(ql)?:\/\//.test(value), 'must be a postgres:// connection string'),
+  DIRECT_URL: z.string().url().optional(),
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -22,4 +25,7 @@ export const env = {
   isTest: values.NODE_ENV === 'test',
   port: values.PORT,
   logLevel: values.LOG_LEVEL,
+  databaseUrl: values.DATABASE_URL,
+  directUrl: values.DIRECT_URL ?? values.DATABASE_URL,
+  dbPoolMax: values.DB_POOL_MAX,
 };

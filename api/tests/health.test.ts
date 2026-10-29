@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/app.ts';
+import { closePool } from '../src/db/pool.ts';
+import { skipWithoutDatabase } from './db.ts';
+
+afterAll(() => closePool());
 
 describe('the API', () => {
   it('answers the health check', async () => {
@@ -37,5 +41,11 @@ describe('the API', () => {
     const res = await request(app).get('/health');
     expect(res.headers['x-powered-by']).toBeUndefined();
     expect(res.headers['x-content-type-options']).toBe('nosniff');
+  });
+
+  it.skipIf(skipWithoutDatabase)('reports ready when the database answers', async () => {
+    const res = await request(app).get('/ready');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok', database: 'ok' });
   });
 });

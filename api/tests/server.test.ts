@@ -17,11 +17,11 @@ const freePort = () =>
     });
   });
 
-const startServer = async () => {
+const startServer = async (extraEnv: Record<string, string> = {}) => {
   const port = await freePort();
   const child = spawn(process.execPath, ['src/server.ts'], {
     cwd: root,
-    env: { ...process.env, NODE_ENV: 'production', PORT: String(port), LOG_LEVEL: 'silent' },
+    env: { ...process.env, NODE_ENV: 'production', PORT: String(port), LOG_LEVEL: 'silent', ...extraEnv },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
   let stderr = '';
@@ -37,7 +37,7 @@ const startServer = async () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-  return { child, healthy, output: () => stderr };
+  return { child, healthy, port, output: () => stderr };
 };
 
 const exitOf = (child: ChildProcess) =>
@@ -60,6 +60,21 @@ describe('the server process', () => {
     const exit = exitOf(child);
     child.kill('SIGTERM');
     expect(await exit).toEqual({ code: 0, signal: null });
+  });
+
+  it('stays alive and says so when the database is unreachable', async () => {
+    const deadPort = await freePort();
+    const { child, healthy, port, output } = await startServer({ DATABASE_URL: `postgresql://nobody@127.0.0.1:${deadPort}/none` });
+    try {
+      expect(healthy, output()).toBe(true);
+      const ready = await fetch(`http://127.0.0.1:${port}/ready`);
+      expect(ready.status).toBe(503);
+      expect(await ready.json()).toEqual({ status: 'unavailable', database: 'unreachable' });
+    } finally {
+      const exit = exitOf(child);
+      child.kill();
+      await exit;
+    }
   });
 
   it('loads the shared engine package as TypeScript, without a build step', async () => {
