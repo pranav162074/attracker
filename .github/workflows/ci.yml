@@ -11,6 +11,24 @@ jobs:
     name: Lint, typecheck and test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: attracker
+          POSTGRES_PASSWORD: attracker_ci
+          POSTGRES_DB: attracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U attracker -d attracker_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://attracker:attracker_ci@localhost:5432/attracker_test
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +44,12 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Migrations apply, roll back and apply again
+        run: |
+          npm run migrate -w @attracker/api
+          npm run migrate:down -w @attracker/api
+          npm run migrate -w @attracker/api
 
       - name: Test
         run: npm test

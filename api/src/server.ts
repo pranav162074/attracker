@@ -2,6 +2,7 @@ import http from 'node:http';
 import { env } from './config/env.ts';
 import { logger } from './config/logger.ts';
 import { app } from './app.ts';
+import { closePool } from './db/pool.ts';
 
 const server = http.createServer(app);
 
@@ -20,7 +21,14 @@ const shutdown = (signal: string) => {
     process.exit(1);
   }, 10_000);
   force.unref();
-  server.close(() => process.exit(0));
+  server.close(async () => {
+    try {
+      await closePool();
+    } catch (error) {
+      logger.error({ err: error }, 'Error while closing the database pool');
+    }
+    process.exit(0);
+  });
 };
 
 process.on('SIGINT', () => shutdown('SIGINT'));
