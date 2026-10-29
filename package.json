@@ -1,0 +1,29 @@
+{
+  "name": "attracker",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "engine",
+    "api"
+  ],
+  "engines": {
+    "node": ">=22.18",
+    "npm": "^10.9.0 || >=11.0.0 <11.5.0 || >=11.6.1"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p engine && tsc -p engine/tsconfig.test.json && tsc -p api",
+    "test": "vitest run",
+    "dev": "npm run dev -w @attracker/api",
+    "start": "npm start -w @attracker/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.0.5"
+  }
+}
