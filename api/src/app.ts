@@ -4,11 +4,15 @@ import type { ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { logger } from './config/logger.ts';
+import { env } from './config/env.ts';
 import { pingDatabase } from './db/pool.ts';
+import { HttpError } from './http/errors.ts';
+import { authRoutes } from './routes/auth.ts';
 
 export const app = express();
 
 app.disable('x-powered-by');
+app.set('trust proxy', env.trustProxy);
 app.use(
   pinoHttp({
     logger,
@@ -39,12 +43,18 @@ app.get('/ready', async (req, res) => {
   }
 });
 
+app.use('/auth', authRoutes);
+
 app.use((_req, res) => {
   res.status(404).json({ error: 'not_found', message: 'Route not found' });
 });
 
 const handleError: ErrorRequestHandler = (err, req, res, next) => {
   if (res.headersSent) return next(err);
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ error: err.code, message: err.message, ...(err.details !== undefined && { details: err.details }) });
+    return;
+  }
   const status = typeof err?.status === 'number' && err.status >= 400 && err.status < 500 ? err.status : 500;
   if (status === 500) req.log.error({ err }, 'Unhandled error');
   res.status(status).json({
