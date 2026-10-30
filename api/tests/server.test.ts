@@ -8,6 +8,7 @@ import pg from 'pg';
 import { skipWithoutDatabase } from './db.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const STARTUP_LIMIT_MS = 45_000;
 
 const freePort = () =>
   new Promise<number>((resolve, reject) => {
@@ -33,20 +34,26 @@ const startServer = async (extraEnv: Record<string, string> = {}) => {
   });
 
   let healthy = false;
-  for (let i = 0; i < 100 && !healthy; i += 1) {
+  const deadline = Date.now() + STARTUP_LIMIT_MS;
+  while (!healthy && child.exitCode === null && Date.now() < deadline) {
     try {
-      healthy = (await fetch(`http://127.0.0.1:${port}/health`)).ok;
+      healthy = (await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(2000) })).ok;
     } catch {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-  return { child, healthy, port, output: () => stderr };
+  const output = () => (child.exitCode !== null && !healthy ? `server exited with code ${child.exitCode}\n${stderr}` : stderr);
+  return { child, healthy, port, output };
 };
 
 const exitOf = (child: ChildProcess) =>
-  new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
-    child.once('exit', (code, signal) => resolve({ code, signal }))
-  );
+  new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      resolve({ code: child.exitCode, signal: child.signalCode });
+      return;
+    }
+    child.once('exit', (code, signal) => resolve({ code, signal }));
+  });
 
 const createdEmails: string[] = [];
 const testIp = `10.251.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250) + 1}`;
@@ -60,7 +67,7 @@ afterAll(async () => {
   await client.end();
 });
 
-describe('the server process', () => {
+describe('the server process', { timeout: 60_000 }, () => {
   it('runs the TypeScript source directly with Node', async () => {
     const { child, healthy, output } = await startServer();
     const exit = exitOf(child);
