@@ -10,7 +10,11 @@ export default defineConfig({
           root: './api',
           include: ['tests/**/*.test.ts'],
           setupFiles: ['tests/setup.ts'],
-          env: { NODE_ENV: 'test', TRUST_PROXY: '1' },
+          env: {
+            NODE_ENV: 'test',
+            TRUST_PROXY: '1',
+            GOOGLE_CLIENT_IDS: 'test-web.apps.googleusercontent.com,test-android.apps.googleusercontent.com',
+          },
           testTimeout: 15000,
           hookTimeout: 30000,
           fileParallelism: false,

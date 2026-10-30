@@ -3,6 +3,8 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { hashPassword, verifyPassword } from '../auth/password.ts';
 import { createSession, deleteSession, deleteUserSessions } from '../auth/sessions.ts';
+import { googleSignInEnabled, GoogleTokenError, verifyGoogleIdToken } from '../auth/google.ts';
+import { GoogleAccountMismatchError, signInMethodsFor, signInWithGoogle } from '../auth/identities.ts';
 import { createUser, EmailTakenError, findUserByEmail, publicUser } from '../auth/users.ts';
 import type { UserRow } from '../auth/users.ts';
 import { SESSION_COOKIE, sessionCookieOptions } from '../http/cookies.ts';
@@ -15,6 +17,7 @@ export const LIMITS = {
   signupPerIp: { bucket: 'signup:ip', limit: 5, windowSeconds: 3600 },
   loginPerIp: { bucket: 'login:ip', limit: 30, windowSeconds: 900 },
   loginPerEmail: { bucket: 'login:email', limit: 10, windowSeconds: 900 },
+  googlePerIp: { bucket: 'google:ip', limit: 30, windowSeconds: 900 },
 } satisfies Record<string, Limit>;
 
 const email = z
@@ -39,6 +42,11 @@ const signupSchema = z.strictObject({
 const loginSchema = z.strictObject({
   email,
   password: z.string({ error: 'Enter your password' }).min(1, 'Enter your password').max(128, 'Password must be at most 128 characters'),
+  client,
+});
+
+const googleSchema = z.strictObject({
+  idToken: z.string({ error: 'idToken is required' }).min(20, 'idToken is not valid').max(4096, 'idToken is not valid'),
   client,
 });
 
@@ -95,9 +103,35 @@ authRoutes.post(
   }
 );
 
-authRoutes.get('/me', requireAuth, (req, res) => {
+authRoutes.post('/google', rateLimit(LIMITS.googlePerIp, ipOf), validateBody(googleSchema), async (req, res) => {
+  if (!googleSignInEnabled()) {
+    res.status(503).json({ error: 'google_disabled', message: 'Google sign-in is not set up on this server' });
+    return;
+  }
+  const body = req.body as z.infer<typeof googleSchema>;
+  try {
+    const profile = await verifyGoogleIdToken(body.idToken);
+    const { user, created } = await signInWithGoogle(profile);
+    await startSession(req, res, user, body.client, created ? 201 : 200);
+  } catch (error) {
+    if (error instanceof GoogleTokenError) {
+      res.status(401).json({ error: error.code, message: error.message });
+      return;
+    }
+    if (error instanceof GoogleAccountMismatchError) {
+      res.status(409).json({ error: 'google_account_mismatch', message: error.message });
+      return;
+    }
+    throw error;
+  }
+});
+
+authRoutes.get('/me', requireAuth, async (req, res) => {
   const auth = req.auth!;
-  res.set('Cache-Control', 'no-store').json({ user: publicUser({ id: auth.userId, email: auth.email, createdAt: auth.createdAt }) });
+  const signInMethods = await signInMethodsFor(auth.userId);
+  res.set('Cache-Control', 'no-store').json({
+    user: { ...publicUser({ id: auth.userId, email: auth.email, createdAt: auth.createdAt }), signInMethods },
+  });
 });
 
 authRoutes.post('/logout', requireAuth, async (req, res) => {

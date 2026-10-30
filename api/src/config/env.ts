@@ -14,6 +14,11 @@ const schema = z.object({
     .transform((value) => value.split(',').map((origin) => origin.trim()).filter(Boolean))
     .pipe(z.array(z.string().url()).min(1)),
   SESSION_DAYS: z.coerce.number().int().min(1).max(365).default(60),
+  GOOGLE_CLIENT_IDS: z
+    .string()
+    .default('')
+    .transform((value) => value.split(',').map((id) => id.trim()).filter(Boolean))
+    .pipe(z.array(z.string().regex(/^[\w.-]+\.apps\.googleusercontent\.com$/, 'must be Google OAuth client IDs ending in .apps.googleusercontent.com'))),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -38,4 +43,5 @@ export const env = {
   trustProxy: values.TRUST_PROXY,
   allowedOrigins: new Set(values.ALLOWED_ORIGINS.map((origin) => new URL(origin).origin)),
   sessionDays: values.SESSION_DAYS,
+  googleClientIds: values.GOOGLE_CLIENT_IDS,
 };
