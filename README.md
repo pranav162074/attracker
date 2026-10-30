@@ -46,7 +46,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 |---|---|---|
 | POST | `/auth/signup` | Create an account and log in (`{ email, password, client }`) |
 | POST | `/auth/login` | Log in |
-| GET | `/auth/me` | The logged-in user |
+| POST | `/auth/google` | Continue with Google (`{ idToken, client }`) |
+| GET | `/auth/me` | The logged-in user, with their sign-in methods |
 | POST | `/auth/logout` | Log out this device |
 | POST | `/auth/logout-all` | Log out every device |
 | GET | `/health` | Liveness, without touching the database |
@@ -55,6 +56,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 `client` is `web` (the default) or `app`. The website gets an `HttpOnly`, `SameSite=Lax` session cookie, `Secure` in production. The phone app gets a token in the response and sends it as `Authorization: Bearer <token>`. Sessions last 60 days and are extended while in use; only a SHA-256 hash of each token is stored.
 
 Passwords are hashed with scrypt (N = 32768), and the parameters are stored with each hash so they can be raised later without breaking old ones. A wrong password and an unknown email get the same answer.
+
+Continue with Google takes the ID token the website or app gets from Google. The API checks it with Google's own library: signature against Google's published keys, issuer, expiry, that it was issued for one of `GOOGLE_CLIENT_IDS`, and that the email is verified. The first sign-in creates an account without a password; if an account with that email already exists, Google is linked to it, so both ways of signing in reach the same account.
 
 Requests that change something with a cookie must come from an allowed origin (`ALLOWED_ORIGINS`), so other sites cannot act on a logged-in browser's behalf. Sign-ups are limited to 5 an hour per address, and logins to 30 per 15 minutes per address and 10 per 15 minutes per account, counted in PostgreSQL.
 
@@ -66,6 +69,7 @@ Requests that change something with a cookie must come from an allowed origin (`
 | `TRUST_PROXY` | 0 | How many proxies sit in front of the API; decides the client address used for limits |
 | `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to make cookie-authenticated changes |
 | `SESSION_DAYS` | 60 | How long an unused session lasts |
+| `GOOGLE_CLIENT_IDS` | (empty: Google sign-in off) | Comma-separated OAuth client IDs (web, Android) whose tokens are accepted |
 
 ## Data model
 
@@ -74,6 +78,7 @@ Only rules and exceptions are stored; each individual class is worked out from t
 | Table | Holds |
 |---|---|
 | `users`, `sessions` | accounts and logged-in devices |
+| `user_identities` | linked Google accounts |
 | `rate_limit_windows` | sign-up and login attempt counters |
 | `timetables` | name, dates, time zone, required and condonation lines |
 | `subjects` | name, theory or lab, whether it counts, per period or per session |
