@@ -40,6 +40,33 @@ npm test
 
 The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL` to it before `npm test`); without one they are skipped locally. They refuse to run against anything but `localhost`, because they create and delete data. GitHub Actions runs everything on every pull request against its own PostgreSQL, including applying, rolling back and reapplying the migrations.
 
+## API
+
+| Method | Path | What it does |
+|---|---|---|
+| POST | `/auth/signup` | Create an account and log in (`{ email, password, client }`) |
+| POST | `/auth/login` | Log in |
+| GET | `/auth/me` | The logged-in user |
+| POST | `/auth/logout` | Log out this device |
+| POST | `/auth/logout-all` | Log out every device |
+| GET | `/health` | Liveness, without touching the database |
+| GET | `/ready` | Readiness, including the database |
+
+`client` is `web` (the default) or `app`. The website gets an `HttpOnly`, `SameSite=Lax` session cookie, `Secure` in production. The phone app gets a token in the response and sends it as `Authorization: Bearer <token>`. Sessions last 60 days and are extended while in use; only a SHA-256 hash of each token is stored.
+
+Passwords are hashed with scrypt (N = 32768), and the parameters are stored with each hash so they can be raised later without breaking old ones. A wrong password and an unknown email get the same answer.
+
+Requests that change something with a cookie must come from an allowed origin (`ALLOWED_ORIGINS`), so other sites cannot act on a logged-in browser's behalf. Sign-ups are limited to 5 an hour per address, and logins to 30 per 15 minutes per address and 10 per 15 minutes per account, counted in PostgreSQL.
+
+| Setting | Default | What it is |
+|---|---|---|
+| `DATABASE_URL` | (required) | Pooled PostgreSQL connection |
+| `DIRECT_URL` | `DATABASE_URL` | Direct connection, for migrations |
+| `PORT`, `LOG_LEVEL`, `NODE_ENV` | 4000, info, development | The usual |
+| `TRUST_PROXY` | 0 | How many proxies sit in front of the API; decides the client address used for limits |
+| `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to make cookie-authenticated changes |
+| `SESSION_DAYS` | 60 | How long an unused session lasts |
+
 ## Data model
 
 Only rules and exceptions are stored; each individual class is worked out from them when needed.
@@ -47,6 +74,7 @@ Only rules and exceptions are stored; each individual class is worked out from t
 | Table | Holds |
 |---|---|
 | `users`, `sessions` | accounts and logged-in devices |
+| `rate_limit_windows` | sign-up and login attempt counters |
 | `timetables` | name, dates, time zone, required and condonation lines |
 | `subjects` | name, theory or lab, whether it counts, per period or per session |
 | `grid_versions`, `grid_slots` | the weekly grid, with a new version from any date |

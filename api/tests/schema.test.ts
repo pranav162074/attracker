@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { describe, it, expect, afterAll } from 'vitest';
 import { pool, query, closePool, withTransaction } from '../src/db/pool.ts';
-import { skipWithoutDatabase } from './db.ts';
+import { databaseReady, skipWithoutDatabase } from './db.ts';
 
 const userIds: number[] = [];
 
@@ -56,7 +56,7 @@ const rejects = async (text: string, params: unknown[], code: string) => {
 };
 
 afterAll(async () => {
-  if (userIds.length > 0) await pool.query('DELETE FROM users WHERE id = ANY($1::bigint[])', [userIds]).catch(() => undefined);
+  if (databaseReady && userIds.length > 0) await pool.query('DELETE FROM users WHERE id = ANY($1::bigint[])', [userIds]);
   await closePool();
 });
 

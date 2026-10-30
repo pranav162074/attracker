@@ -2,7 +2,10 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import net from 'node:net';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import { describe, it, expect, afterAll } from 'vitest';
+import pg from 'pg';
+import { skipWithoutDatabase } from './db.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -45,6 +48,18 @@ const exitOf = (child: ChildProcess) =>
     child.once('exit', (code, signal) => resolve({ code, signal }))
   );
 
+const createdEmails: string[] = [];
+const testIp = `10.251.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250) + 1}`;
+
+afterAll(async () => {
+  if (createdEmails.length === 0) return;
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  await client.query('DELETE FROM users WHERE email = ANY($1::text[])', [createdEmails]);
+  await client.query('DELETE FROM rate_limit_windows WHERE key = $1', [testIp]);
+  await client.end();
+});
+
 describe('the server process', () => {
   it('runs the TypeScript source directly with Node', async () => {
     const { child, healthy, output } = await startServer();
@@ -70,6 +85,26 @@ describe('the server process', () => {
       const ready = await fetch(`http://127.0.0.1:${port}/ready`);
       expect(ready.status).toBe(503);
       expect(await ready.json()).toEqual({ status: 'unavailable', database: 'unreachable' });
+    } finally {
+      const exit = exitOf(child);
+      child.kill();
+      await exit;
+    }
+  });
+
+  it.skipIf(skipWithoutDatabase)('marks the session cookie Secure in production', async () => {
+    const { child, healthy, port, output } = await startServer();
+    try {
+      expect(healthy, output()).toBe(true);
+      const email = `secure-${randomUUID()}@example.com`;
+      createdEmails.push(email);
+      const res = await fetch(`http://127.0.0.1:${port}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': testIp },
+        body: JSON.stringify({ email, password: 'correct horse battery' }),
+      });
+      expect(res.status).toBe(201);
+      expect(res.headers.get('set-cookie')).toMatch(/;\s*Secure/i);
     } finally {
       const exit = exitOf(child);
       child.kill();

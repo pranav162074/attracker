@@ -10,7 +10,7 @@ export default defineConfig({
           root: './api',
           include: ['tests/**/*.test.ts'],
           setupFiles: ['tests/setup.ts'],
-          env: { NODE_ENV: 'test' },
+          env: { NODE_ENV: 'test', TRUST_PROXY: '1' },
           testTimeout: 15000,
           hookTimeout: 30000,
           fileParallelism: false,
