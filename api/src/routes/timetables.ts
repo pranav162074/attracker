@@ -7,6 +7,7 @@ import type { TimetableSettings, UpdateTimetable } from '../timetables/schemas.t
 import { createTimetable, deleteTimetable, getTimetable, listTimetables, updateTimetable } from '../timetables/repo.ts';
 import { subjectRoutes } from './subjects.ts';
 import { gridRoutes } from './grid.ts';
+import { calendarRoutes } from './calendar.ts';
 
 export const timetableRoutes = express.Router();
 
@@ -42,3 +43,4 @@ timetableRoutes.delete('/:id', async (req, res) => {
 
 timetableRoutes.use('/:timetableId/subjects', subjectRoutes);
 timetableRoutes.use('/:timetableId/grid', gridRoutes);
+timetableRoutes.use('/:timetableId/calendar', calendarRoutes);
