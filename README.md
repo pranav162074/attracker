@@ -55,6 +55,10 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET, PATCH, DELETE | `/timetables/{id}` | Show, change (including `archived`), or delete with everything in it |
 | GET, POST | `/timetables/{id}/subjects` | List (`?archived=true` for all) or add subjects |
 | PATCH, DELETE | `/timetables/{id}/subjects/{subjectId}` | Change, archive, or delete an unused subject |
+| GET | `/timetables/{id}/grid` | The weekly grid in effect today, or on `?on=YYYY-MM-DD` |
+| PUT | `/timetables/{id}/grid` | Save a grid from a date (`{ effectiveFrom, slots, discardMarks? }`) |
+| GET | `/timetables/{id}/grid/versions` | Every version with the dates it covers |
+| DELETE | `/timetables/{id}/grid/versions/{versionId}` | Remove a version |
 | GET | `/health` | Liveness, without touching the database |
 | GET | `/ready` | Readiness, including the database |
 
@@ -67,6 +71,8 @@ Continue with Google takes the ID token the website or app gets from Google. The
 Everything under `/timetables` belongs to the logged-in user. Someone else's timetable answers 404, exactly like one that does not exist, so ids reveal nothing. A user can have up to 20 active timetables; archived ones do not count and free their name. Percentages are stored as whole hundredths (75.5% is 7550), so no rounding creeps in.
 
 A subject is `theory`, `lab` or `other`. Subjects of kind `other` (library, sports, counselling) do not count toward attendance unless told to, and any subject can count per session instead of per period, for things like a weekly dance class. New subjects get the least-used colour of a 12-colour palette. A subject that the timetable uses or that has attendance history cannot be deleted, only archived, so no history is lost.
+
+The grid is versioned. Saving a grid from a new date starts a new version, and the earlier weeks keep the schedule they had. Saving again on an existing version's date edits it in place: classes are matched to the existing ones first by day and time, then by day and subject, so a corrected subject, a shifted time or a swap keeps each class and its attendance marks. A save that would remove classes holding marks is refused with a list of them unless `discardMarks` is set. Overlaps within a day are reported by name, and the database checks them again at the end of each save, which lets a whole block of classes move at once.
 
 Requests that change something with a cookie must come from an allowed origin (`ALLOWED_ORIGINS`), so other sites cannot act on a logged-in browser's behalf. Sign-ups are limited to 5 an hour per address, and logins to 30 per 15 minutes per address and 10 per 15 minutes per account, counted in PostgreSQL.
 
