@@ -53,6 +53,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/timetables` | Your timetables (`?archived=true` includes archived ones) |
 | POST | `/timetables` | Create one (`{ name, startsOn, endsOn?, timeZone?, requiredPercent?, condonationPercent? }`) |
 | GET, PATCH, DELETE | `/timetables/{id}` | Show, change (including `archived`), or delete with everything in it |
+| GET, POST | `/timetables/{id}/subjects` | List (`?archived=true` for all) or add subjects |
+| PATCH, DELETE | `/timetables/{id}/subjects/{subjectId}` | Change, archive, or delete an unused subject |
 | GET | `/health` | Liveness, without touching the database |
 | GET | `/ready` | Readiness, including the database |
 
@@ -63,6 +65,8 @@ Passwords are hashed with scrypt (N = 32768), and the parameters are stored with
 Continue with Google takes the ID token the website or app gets from Google. The API checks it with Google's own library: signature against Google's published keys, issuer, expiry, that it was issued for one of `GOOGLE_CLIENT_IDS`, and that the email is verified. The first sign-in creates an account without a password; if an account with that email already exists, Google is linked to it, so both ways of signing in reach the same account.
 
 Everything under `/timetables` belongs to the logged-in user. Someone else's timetable answers 404, exactly like one that does not exist, so ids reveal nothing. A user can have up to 20 active timetables; archived ones do not count and free their name. Percentages are stored as whole hundredths (75.5% is 7550), so no rounding creeps in.
+
+A subject is `theory`, `lab` or `other`. Subjects of kind `other` (library, sports, counselling) do not count toward attendance unless told to, and any subject can count per session instead of per period, for things like a weekly dance class. New subjects get the least-used colour of a 12-colour palette. A subject that the timetable uses or that has attendance history cannot be deleted, only archived, so no history is lost.
 
 Requests that change something with a cookie must come from an allowed origin (`ALLOWED_ORIGINS`), so other sites cannot act on a logged-in browser's behalf. Sign-ups are limited to 5 an hour per address, and logins to 30 per 15 minutes per address and 10 per 15 minutes per account, counted in PostgreSQL.
 
