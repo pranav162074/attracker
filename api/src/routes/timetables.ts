@@ -5,6 +5,7 @@ import { validateBody } from '../middleware/validate.ts';
 import { createTimetableSchema, updateTimetableSchema } from '../timetables/schemas.ts';
 import type { TimetableSettings, UpdateTimetable } from '../timetables/schemas.ts';
 import { createTimetable, deleteTimetable, getTimetable, listTimetables, updateTimetable } from '../timetables/repo.ts';
+import { subjectRoutes } from './subjects.ts';
 
 export const timetableRoutes = express.Router();
 
@@ -37,3 +38,5 @@ timetableRoutes.delete('/:id', async (req, res) => {
   await deleteTimetable(req.auth!.userId, idParam(req.params.id, 'Timetable'));
   res.status(204).end();
 });
+
+timetableRoutes.use('/:timetableId/subjects', subjectRoutes);
