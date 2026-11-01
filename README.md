@@ -53,6 +53,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/timetables` | Your timetables (`?archived=true` includes archived ones) |
 | POST | `/timetables` | Create one (`{ name, startsOn, endsOn?, timeZone?, requiredPercent?, condonationPercent? }`) |
 | GET, PATCH, DELETE | `/timetables/{id}` | Show, change (including `archived`), or delete with everything in it |
+| GET | `/timetables/{id}/setup` | Checklist of what is filled in, and whether tracking can start |
+| POST | `/timetables/{id}/start` | Start tracking |
 | GET, POST | `/timetables/{id}/subjects` | List (`?archived=true` for all) or add subjects |
 | PATCH, DELETE | `/timetables/{id}/subjects/{subjectId}` | Change, archive, or delete an unused subject |
 | GET | `/timetables/{id}/grid` | The weekly grid in effect today, or on `?on=YYYY-MM-DD` |
@@ -71,6 +73,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 Passwords are hashed with scrypt (N = 32768), and the parameters are stored with each hash so they can be raised later without breaking old ones. A wrong password and an unknown email get the same answer.
 
 Continue with Google takes the ID token the website or app gets from Google. The API checks it with Google's own library: signature against Google's published keys, issuer, expiry, that it was issued for one of `GOOGLE_CLIENT_IDS`, and that the email is verified. The first sign-in creates an account without a password; if an account with that email already exists, Google is linked to it, so both ways of signing in reach the same account.
+
+A timetable begins in setup. The student enters the semester dates, the subjects, the weekly timetable and their college's holidays, then presses Start Tracking. Tracking needs at least one subject that counts for attendance and a weekly timetable covering the first day of the semester; holidays are optional because not every timetable has them. Attendance then counts from the semester's start date with every class present by default, and everything stays editable afterwards.
 
 Everything under `/timetables` belongs to the logged-in user. Someone else's timetable answers 404, exactly like one that does not exist, so ids reveal nothing. A user can have up to 20 active timetables; archived ones do not count and free their name. Percentages are stored as whole hundredths (75.5% is 7550), so no rounding creeps in.
 

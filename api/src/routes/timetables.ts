@@ -6,6 +6,7 @@ import { createTimetableSchema, updateTimetableSchema } from '../timetables/sche
 import type { TimetableSettings, UpdateTimetable } from '../timetables/schemas.ts';
 import { createTimetable, deleteTimetable, getTimetable, listTimetables, updateTimetable } from '../timetables/repo.ts';
 import { subjectRoutes } from './subjects.ts';
+import { getSetup, startTracking } from '../timetables/setup.ts';
 import { gridRoutes } from './grid.ts';
 import { calendarRoutes } from './calendar.ts';
 
@@ -39,6 +40,14 @@ timetableRoutes.patch('/:id', validateBody(updateTimetableSchema), async (req, r
 timetableRoutes.delete('/:id', async (req, res) => {
   await deleteTimetable(req.auth!.userId, idParam(req.params.id, 'Timetable'));
   res.status(204).end();
+});
+
+timetableRoutes.get('/:id/setup', async (req, res) => {
+  res.json(await getSetup(req.auth!.userId, idParam(req.params.id, 'Timetable')));
+});
+
+timetableRoutes.post('/:id/start', async (req, res) => {
+  res.json({ timetable: await startTracking(req.auth!.userId, idParam(req.params.id, 'Timetable')) });
 });
 
 timetableRoutes.use('/:timetableId/subjects', subjectRoutes);

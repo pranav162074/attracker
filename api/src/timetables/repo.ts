@@ -15,11 +15,12 @@ type Row = {
   required_bp: number | null;
   condonation_bp: number | null;
   archived_at: Date | null;
+  tracking_started_at: Date | null;
   created_at: Date;
   updated_at: Date;
 };
 
-const COLUMNS = 'id, name, starts_on, ends_on, time_zone, required_bp, condonation_bp, archived_at, created_at, updated_at';
+const COLUMNS = 'id, name, starts_on, ends_on, time_zone, required_bp, condonation_bp, archived_at, tracking_started_at, created_at, updated_at';
 
 const toBp = (percent: number | null) => (percent === null ? null : Math.round(percent * 100));
 const fromBp = (bp: number | null) => (bp === null ? null : bp / 100);
@@ -33,6 +34,8 @@ export const toTimetable = (row: Row) => ({
   requiredPercent: fromBp(row.required_bp),
   condonationPercent: fromBp(row.condonation_bp),
   archived: row.archived_at !== null,
+  status: row.tracking_started_at === null ? ('setup' as const) : ('tracking' as const),
+  trackingStartedAt: row.tracking_started_at?.toISOString() ?? null,
   createdAt: row.created_at.toISOString(),
   updatedAt: row.updated_at.toISOString(),
 });
@@ -102,6 +105,15 @@ export const updateTimetable = (userId: number, id: number, changes: UpdateTimet
 
     const archived = changes.archived ?? before.archived;
     if (before.archived && !archived && (await lockActiveCount(client, userId)) >= MAX_ACTIVE_TIMETABLES) throw tooMany();
+
+    if (next.startsOn < before.startsOn) {
+      await client.query(
+        `UPDATE grid_versions SET effective_from = $3
+          WHERE timetable_id = $1 AND effective_from = $2
+            AND effective_from = (SELECT min(effective_from) FROM grid_versions WHERE timetable_id = $1)`,
+        [id, before.startsOn, next.startsOn]
+      );
+    }
 
     try {
       const { rows } = await client.query<Row>(
