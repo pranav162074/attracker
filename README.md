@@ -69,6 +69,9 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | PUT, DELETE | `/timetables/{id}/days/{date}/classes/{slotId}` | Mark a class present, absent or cancelled, or taken by another subject; DELETE undoes |
 | POST | `/timetables/{id}/days/{date}/extra` | Add an extra class |
 | PATCH, DELETE | `/timetables/{id}/extra/{extraId}` | Change or remove an extra class |
+| GET | `/timetables/{id}/summary` | Overall and per-subject attendance, zone, can miss, need, best possible (`?asOf=YYYY-MM-DD` for any date) |
+| GET | `/overview` | Every active timetable's headline number, for the home screen |
+| GET | `/today` | Today's classes from every timetable, in time order |
 | GET | `/health` | Liveness, without touching the database |
 | GET | `/ready` | Readiness, including the database |
 
@@ -81,6 +84,8 @@ Continue with Google takes the ID token the website or app gets from Google. The
 A timetable begins in setup. The student enters the semester dates, the subjects, the weekly timetable and their college's holidays, then presses Start Tracking. Tracking needs at least one subject that counts for attendance and a weekly timetable covering the first day of the semester; holidays are optional because not every timetable has them. Attendance then counts from the semester's start date with every class present by default, and everything stays editable afterwards.
 
 Marking needs tracking to have started; a day can be looked at during setup as a preview. Present is the default and is never stored: marking a class present again removes its mark. A mark is refused for a class that does not happen on that day, and every change answers with the updated day, worked out by the same engine the app uses. Day-wide changes (a sudden holiday, a half day, a Saturday following Monday) are calendar entries.
+
+The summary gives each percentage as a number and as truncated text (`60.97`), the zone (`safe`, `condonation`, `below`), and for the required and condonation lines: whether it is met, periods that can still be missed, periods needed in a row, and whether that is still possible before the end. Each subject also reports `unitsPerClass` (3 for a three-period lab), so the app can say "2 labs" instead of "6 periods". Archived subjects stay in the summary while they have history.
 
 Everything under `/timetables` belongs to the logged-in user. Someone else's timetable answers 404, exactly like one that does not exist, so ids reveal nothing. A user can have up to 20 active timetables; archived ones do not count and free their name. Percentages are stored as whole hundredths (75.5% is 7550), so no rounding creeps in.
 

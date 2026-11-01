@@ -46,7 +46,7 @@ export const ownedTimetable = async (userId: number, timetableId: number): Promi
   };
 };
 
-export const loadEngineInput = async (userId: number, timetableId: number, at = new Date()) => {
+export const loadEngineInput = async (userId: number, timetableId: number, asOf?: string) => {
   const timetable = await ownedTimetable(userId, timetableId);
   const [subjects, slots, versions, calendar, marks, extras, checkpoints] = await Promise.all([
     query<{ id: number; counts_attendance: boolean; count_per_session: boolean }>(
@@ -128,7 +128,7 @@ export const loadEngineInput = async (userId: number, timetableId: number, at = 
       attendance: row.attendance,
     })),
     checkpoint,
-    now: nowIn(timetable.timeZone, at),
+    now: asOf === undefined ? nowIn(timetable.timeZone) : { date: asOf, minute: 1440 },
   };
   return { timetable, input };
 };

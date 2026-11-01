@@ -9,6 +9,7 @@ import { pingDatabase } from './db/pool.ts';
 import { HttpError } from './http/errors.ts';
 import { authRoutes } from './routes/auth.ts';
 import { timetableRoutes } from './routes/timetables.ts';
+import { homeRoutes } from './routes/summary.ts';
 
 export const app = express();
 
@@ -46,6 +47,7 @@ app.get('/ready', async (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/timetables', timetableRoutes);
+app.use(homeRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'not_found', message: 'Route not found' });
