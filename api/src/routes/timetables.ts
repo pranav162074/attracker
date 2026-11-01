@@ -9,6 +9,7 @@ import { subjectRoutes } from './subjects.ts';
 import { getSetup, startTracking } from '../timetables/setup.ts';
 import { gridRoutes } from './grid.ts';
 import { calendarRoutes } from './calendar.ts';
+import { dayRoutes, extraRoutes } from './days.ts';
 
 export const timetableRoutes = express.Router();
 
@@ -53,3 +54,5 @@ timetableRoutes.post('/:id/start', async (req, res) => {
 timetableRoutes.use('/:timetableId/subjects', subjectRoutes);
 timetableRoutes.use('/:timetableId/grid', gridRoutes);
 timetableRoutes.use('/:timetableId/calendar', calendarRoutes);
+timetableRoutes.use('/:timetableId/days', dayRoutes);
+timetableRoutes.use('/:timetableId/extra', extraRoutes);

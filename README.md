@@ -65,6 +65,10 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | POST | `/timetables/{id}/calendar/bulk` | Add many at once, all or nothing |
 | POST | `/timetables/{id}/calendar/import` | Read a pasted holiday list and preview it, without saving |
 | PATCH, DELETE | `/timetables/{id}/calendar/{dayId}` | Change or remove an entry |
+| GET | `/timetables/{id}/days/{date}` | Every class on a day, with its status from the engine |
+| PUT, DELETE | `/timetables/{id}/days/{date}/classes/{slotId}` | Mark a class present, absent or cancelled, or taken by another subject; DELETE undoes |
+| POST | `/timetables/{id}/days/{date}/extra` | Add an extra class |
+| PATCH, DELETE | `/timetables/{id}/extra/{extraId}` | Change or remove an extra class |
 | GET | `/health` | Liveness, without touching the database |
 | GET | `/ready` | Readiness, including the database |
 
@@ -75,6 +79,8 @@ Passwords are hashed with scrypt (N = 32768), and the parameters are stored with
 Continue with Google takes the ID token the website or app gets from Google. The API checks it with Google's own library: signature against Google's published keys, issuer, expiry, that it was issued for one of `GOOGLE_CLIENT_IDS`, and that the email is verified. The first sign-in creates an account without a password; if an account with that email already exists, Google is linked to it, so both ways of signing in reach the same account.
 
 A timetable begins in setup. The student enters the semester dates, the subjects, the weekly timetable and their college's holidays, then presses Start Tracking. Tracking needs at least one subject that counts for attendance and a weekly timetable covering the first day of the semester; holidays are optional because not every timetable has them. Attendance then counts from the semester's start date with every class present by default, and everything stays editable afterwards.
+
+Marking needs tracking to have started; a day can be looked at during setup as a preview. Present is the default and is never stored: marking a class present again removes its mark. A mark is refused for a class that does not happen on that day, and every change answers with the updated day, worked out by the same engine the app uses. Day-wide changes (a sudden holiday, a half day, a Saturday following Monday) are calendar entries.
 
 Everything under `/timetables` belongs to the logged-in user. Someone else's timetable answers 404, exactly like one that does not exist, so ids reveal nothing. A user can have up to 20 active timetables; archived ones do not count and free their name. Percentages are stored as whole hundredths (75.5% is 7550), so no rounding creeps in.
 
