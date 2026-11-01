@@ -11,6 +11,7 @@ import { gridRoutes } from './grid.ts';
 import { calendarRoutes } from './calendar.ts';
 import { dayRoutes, extraRoutes } from './days.ts';
 import { summaryRoutes } from './summary.ts';
+import { checkpointRoutes } from './checkpoints.ts';
 
 export const timetableRoutes = express.Router();
 
@@ -58,3 +59,4 @@ timetableRoutes.use('/:timetableId/calendar', calendarRoutes);
 timetableRoutes.use('/:timetableId/days', dayRoutes);
 timetableRoutes.use('/:timetableId/extra', extraRoutes);
 timetableRoutes.use('/:timetableId/summary', summaryRoutes);
+timetableRoutes.use('/:timetableId/checkpoints', checkpointRoutes);

@@ -72,6 +72,9 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/timetables/{id}/summary` | Overall and per-subject attendance, zone, can miss, need, best possible (`?asOf=YYYY-MM-DD` for any date) |
 | GET | `/overview` | Every active timetable's headline number, for the home screen |
 | GET | `/today` | Today's classes from every timetable, in time order |
+| GET, POST | `/timetables/{id}/checkpoints` | List or save official numbers on a date (typed in, or confirmed from a sheet) |
+| POST | `/timetables/{id}/checkpoints/sheet?registration=` | Read the student's own row from the class attendance sheet (`.xls`/`.xlsx`) and preview it |
+| DELETE | `/timetables/{id}/checkpoints/{checkpointId}` | Remove a checkpoint |
 | GET | `/health` | Liveness, without touching the database |
 | GET | `/ready` | Readiness, including the database |
 
@@ -86,6 +89,8 @@ A timetable begins in setup. The student enters the semester dates, the subjects
 Marking needs tracking to have started; a day can be looked at during setup as a preview. Present is the default and is never stored: marking a class present again removes its mark. A mark is refused for a class that does not happen on that day, and every change answers with the updated day, worked out by the same engine the app uses. Day-wide changes (a sudden holiday, a half day, a Saturday following Monday) are calendar entries.
 
 The summary gives each percentage as a number and as truncated text (`60.97`), the zone (`safe`, `condonation`, `below`), and for the required and condonation lines: whether it is met, periods that can still be missed, periods needed in a row, and whether that is still possible before the end. Each subject also reports `unitsPerClass` (3 for a three-period lab), so the app can say "2 labs" instead of "6 periods". Archived subjects stay in the summary while they have history.
+
+Official numbers come from the class teacher's sheet or are typed in. The sheet reader finds the header row with `H`/`A` columns and a registration column, takes only the requested student's row, and returns nothing about anyone else. It matches each column to the timetable's subjects by name, ignoring course codes and bracketed notes, and never gives a lab column to a theory subject. Hours in the sheet's Held and Attended totals that belong to no subject column become free hours. Nothing is saved until the student confirms, and saving again on the same date replaces that checkpoint. Spreadsheets are read with SheetJS 0.20.3 from SheetJS's own distribution, because the last version on npm has known vulnerabilities when reading untrusted files.
 
 Everything under `/timetables` belongs to the logged-in user. Someone else's timetable answers 404, exactly like one that does not exist, so ids reveal nothing. A user can have up to 20 active timetables; archived ones do not count and free their name. Percentages are stored as whole hundredths (75.5% is 7550), so no rounding creeps in.
 
