@@ -10,6 +10,7 @@ import { getSetup, startTracking } from '../timetables/setup.ts';
 import { gridRoutes } from './grid.ts';
 import { calendarRoutes } from './calendar.ts';
 import { dayRoutes, extraRoutes } from './days.ts';
+import { summaryRoutes } from './summary.ts';
 
 export const timetableRoutes = express.Router();
 
@@ -56,3 +57,4 @@ timetableRoutes.use('/:timetableId/grid', gridRoutes);
 timetableRoutes.use('/:timetableId/calendar', calendarRoutes);
 timetableRoutes.use('/:timetableId/days', dayRoutes);
 timetableRoutes.use('/:timetableId/extra', extraRoutes);
+timetableRoutes.use('/:timetableId/summary', summaryRoutes);
