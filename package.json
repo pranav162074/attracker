@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "engine",
-    "api"
+    "api",
+    "app"
   ],
   "engines": {
     "node": ">=22.18",
@@ -12,15 +13,17 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc -p engine && tsc -p engine/tsconfig.test.json && tsc -p api",
+    "typecheck": "tsc -p engine && tsc -p engine/tsconfig.test.json && tsc -p api && tsc -p app",
     "test": "vitest run",
     "dev": "npm run dev -w @attracker/api",
-    "start": "npm start -w @attracker/api"
+    "start": "npm start -w @attracker/api",
+    "app": "npm start -w @attracker/app"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.19.2",
     "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",

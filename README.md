@@ -9,6 +9,7 @@ Work in progress.
 ```
 engine/   the attendance engine and the holiday parser, shared by the API and the app (TypeScript, no dependencies)
 api/      the HTTP API (Node, Express)
+app/      the Android app and the website, from one codebase (React Native, Expo)
 ```
 
 ## Running it
@@ -29,6 +30,19 @@ npm run dev
 The API listens on http://localhost:4000. `GET /health` answers `{"status":"ok"}` without touching the database, so health checks never keep it awake. `GET /ready` also checks the database.
 
 Use `npm ci` rather than `npm install`, so the lockfile is not rewritten.
+
+## Running the app
+
+Start the API first (above), then in a second terminal:
+
+```
+npm run app
+```
+
+- **Phone:** install Expo Go from the Play Store, make sure the phone and the computer are on the same Wi-Fi, and scan the QR code. The app finds the API on the same computer as the dev server, at port 4000. On Windows, allow Node.js through the firewall when asked, on private networks.
+- **Browser:** press `w`. The website uses an HttpOnly cookie for the session; the phone app keeps its token in the Android keystore.
+
+To point the app at another API, set `EXPO_PUBLIC_API_URL`, for example `EXPO_PUBLIC_API_URL=https://attracker-api.onrender.com`.
 
 ## Checks
 
@@ -100,7 +114,7 @@ The grid is versioned. Saving a grid from a new date starts a new version, and t
 
 Calendar entries are `holiday` (one day or a range, such as mid exams), `follows_weekday` (a Saturday following Monday's timetable, or a swapped day), and half days (`no_classes_before` or `no_classes_after` a time). Each day has at most one entry; a clash is reported with what is already there. The holiday import reads lists copied out of an academic calendar PDF, including two columns that end up on one line, in `DD.MM.YYYY`, `DD/MM/YY`, `YYYY-MM-DD` and range forms. It warns when a written weekday does not match its date, and flags dates outside the timetable or already taken. The parser lives in `engine/`, so the app can preview a paste offline.
 
-Requests that change something with a cookie must come from an allowed origin (`ALLOWED_ORIGINS`), so other sites cannot act on a logged-in browser's behalf. Sign-ups are limited to 5 an hour per address, and logins to 30 per 15 minutes per address and 10 per 15 minutes per account, counted in PostgreSQL.
+Requests that change something with a cookie must come from an allowed origin (`ALLOWED_ORIGINS`), so other sites cannot act on a logged-in browser's behalf. The same list decides which sites may read API responses from a browser (CORS); the phone app sends no Origin and needs no entry. Sign-ups are limited to 5 an hour per address, and logins to 30 per 15 minutes per address and 10 per 15 minutes per account, counted in PostgreSQL.
 
 | Setting | Default | What it is |
 |---|---|---|
@@ -108,7 +122,7 @@ Requests that change something with a cookie must come from an allowed origin (`
 | `DIRECT_URL` | `DATABASE_URL` | Direct connection, for migrations |
 | `PORT`, `LOG_LEVEL`, `NODE_ENV` | 4000, info, development | The usual |
 | `TRUST_PROXY` | 0 | How many proxies sit in front of the API; decides the client address used for limits |
-| `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to make cookie-authenticated changes |
+| `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to call the API from a browser (CORS) and to make cookie-authenticated changes |
 | `SESSION_DAYS` | 60 | How long an unused session lasts |
 | `GOOGLE_CLIENT_IDS` | (empty: Google sign-in off) | Comma-separated OAuth client IDs (web, Android) whose tokens are accepted |
 

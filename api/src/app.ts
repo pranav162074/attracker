@@ -7,6 +7,7 @@ import { logger } from './config/logger.ts';
 import { env } from './config/env.ts';
 import { pingDatabase } from './db/pool.ts';
 import { HttpError } from './http/errors.ts';
+import { cors } from './middleware/cors.ts';
 import { authRoutes } from './routes/auth.ts';
 import { timetableRoutes } from './routes/timetables.ts';
 import { homeRoutes } from './routes/summary.ts';
@@ -28,6 +29,7 @@ app.use(
   })
 );
 app.use(helmet());
+app.use(cors);
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/health', (_req, res) => {

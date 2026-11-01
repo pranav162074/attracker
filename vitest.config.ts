@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     projects: [
       { test: { name: 'engine', root: './engine', include: ['tests/**/*.test.ts'] } },
+      { test: { name: 'app', root: './app', include: ['tests/**/*.test.ts'] } },
       {
         test: {
           name: 'api',
