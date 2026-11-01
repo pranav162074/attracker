@@ -7,7 +7,7 @@ Work in progress.
 ## Layout
 
 ```
-engine/   the attendance rules and the holiday parser, shared by the API and the app (TypeScript, no dependencies)
+engine/   the attendance engine and the holiday parser, shared by the API and the app (TypeScript, no dependencies)
 api/      the HTTP API (Node, Express)
 ```
 
@@ -95,6 +95,22 @@ Requests that change something with a cookie must come from an allowed origin (`
 | `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to make cookie-authenticated changes |
 | `SESSION_DAYS` | 60 | How long an unused session lasts |
 | `GOOGLE_CLIENT_IDS` | (empty: Google sign-in off) | Comma-separated OAuth client IDs (web, Android) whose tokens are accepted |
+
+## The attendance engine
+
+`engine/` works out every class and every percentage from plain data: the weekly timetable versions, the calendar, the student's marks, extra classes and the latest official checkpoint. It has no database and no dependencies, so the API and the phone app run the same code.
+
+For each day from the semester start:
+
+1. A holiday or break has no classes. A day that follows another weekday uses that weekday's timetable.
+2. The weekly timetable in effect on that date supplies the classes; a half day removes those before or after its cutoff.
+3. A class counts once its start time has passed. It is attended unless marked absent, not held if marked cancelled, and held for another subject if substituted. Extra classes are added on top, even on holidays.
+4. A lab counts all its periods, a per-session subject counts one, and subjects that do not count for attendance count nothing.
+5. Up to the date of an official checkpoint, the sheet's numbers replace the computed ones, and its free hours are added to the overall total.
+
+Percentages are truncated to two decimals, never rounded, like college sheets. For each line (required and condonation) the engine gives how many periods can still be missed, how many must be attended in a row to get back above it, and whether that is still possible before the semester ends, together with the best percentage reachable by attending everything left. These are exact integer calculations, checked against a brute-force search for every case up to 60 periods.
+
+The tests reproduce a real college attendance sheet: the GVPCE Sem V timetable and holidays schedule exactly the 30 lab periods the sheet shows, and with the sheet's numbers as a checkpoint the engine gives the official 246 held, 150 attended and 60.97%, plus the outlook to the end of instruction (181 periods left, 138 needed for 75%, 29 for 65%, 77.51% at best).
 
 ## Data model
 
