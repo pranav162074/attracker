@@ -206,6 +206,24 @@ export type Mark = { attendance: 'present' | 'absent' | 'cancelled'; substituteS
 
 export type ExtraInput = { subjectId: number; start: string; end: string; periods: number; attendance: 'present' | 'absent' };
 
+export type DayOverview = {
+  date: string;
+  kind: Day['kind'];
+  label: string | null;
+  followsWeekday: number | null;
+  classes: number;
+  held: number;
+  attended: number;
+  absent: number;
+  cancelled: number;
+  upcoming: number;
+  plannedAbsent: number;
+  extra: number;
+  swapped: number;
+};
+
+export type DayRange = { tracking: boolean; checkpoint: { asOf: string } | null; days: DayOverview[] };
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -333,6 +351,7 @@ export const createApi = (options: ApiOptions) => {
     updateSubject: (id: number, subjectId: number, changes: Partial<SubjectInput> & { archived?: boolean }) =>
       request<{ subject: Subject }>('PATCH', `/timetables/${id}/subjects/${subjectId}`, changes).then((result) => result.subject),
     summary: (id: number, asOf?: string) => request<{ summary: Summary }>('GET', `/timetables/${id}/summary${asOf ? `?asOf=${asOf}` : ''}`).then((result) => result.summary),
+    days: (id: number, from: string, to: string) => request<DayRange>('GET', `/timetables/${id}/days?from=${from}&to=${to}`),
     day: (id: number, date: string) => request<{ day: Day }>('GET', `/timetables/${id}/days/${date}`).then((result) => result.day),
     mark: (id: number, date: string, slotId: number, mark: Mark) =>
       request<{ day: Day }>('PUT', `/timetables/${id}/days/${date}/classes/${slotId}`, mark).then((result) => result.day),

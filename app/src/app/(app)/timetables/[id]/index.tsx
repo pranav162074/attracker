@@ -76,8 +76,13 @@ export default function TimetableScreen() {
       <ErrorNotice message={message ?? error} />
       {summary ? (
         <>
-          <View style={styles.markButton}>
-            <Button title="Mark attendance" onPress={() => router.push(`${base}/days/${localDate()}`)} />
+          <View style={styles.markButtons}>
+            <View style={styles.markButton}>
+              <Button title="Mark attendance" onPress={() => router.push(`${base}/days/${localDate()}`)} />
+            </View>
+            <View style={styles.markButton}>
+              <Button title="Month view" variant="secondary" onPress={() => router.push(`${base}/month`)} />
+            </View>
           </View>
           <Dashboard summary={summary} />
         </>
@@ -117,6 +122,7 @@ const styles = StyleSheet.create({
   markText: { fontSize: 13, color: colors.muted, fontWeight: '600' },
   markTextDone: { color: tones.good.text },
   start: { marginTop: space.xl },
-  markButton: { marginBottom: space.lg },
+  markButtons: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
+  markButton: { flex: 1 },
   startNote: { fontSize: 13, color: colors.muted, marginTop: space.sm, textAlign: 'center' },
 });
