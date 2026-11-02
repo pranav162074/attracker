@@ -35,6 +35,37 @@ export const getDay = async (userId: number, timetableId: number, date: string) 
   return toDayResponse(dayPlan(input, date), timetable.tracking);
 };
 
+export const MAX_RANGE_DAYS = 62;
+
+const daySpan = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
+
+const nextDate = (date: string) => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+const overview = (plan: DayPlan) => {
+  const totals = { classes: plan.occurrences.length, held: 0, attended: 0, absent: 0, cancelled: 0, upcoming: 0, plannedAbsent: 0, extra: 0, swapped: 0 };
+  for (const occurrence of plan.occurrences) {
+    if (occurrence.extraId !== null) totals.extra += 1;
+    if (occurrence.subjectId !== occurrence.scheduledSubjectId) totals.swapped += 1;
+    if (occurrence.status === 'cancelled') totals.cancelled += 1;
+    if (occurrence.status === 'upcoming') totals.upcoming += 1;
+    if (occurrence.plannedAbsent) totals.plannedAbsent += 1;
+    if (!occurrence.counts || occurrence.status === 'cancelled' || occurrence.status === 'upcoming') continue;
+    totals.held += occurrence.units;
+    if (occurrence.status === 'attended') totals.attended += occurrence.units;
+    else totals.absent += occurrence.units;
+  }
+  return { date: plan.date, kind: plan.kind, label: plan.label, followsWeekday: plan.followsWeekday, ...totals };
+};
+
+export const getDays = async (userId: number, timetableId: number, from: string, to: string) => {
+  if (to < from) throw new HttpError(400, 'validation_error', 'to must be on or after from');
+  if (daySpan(from, to) > MAX_RANGE_DAYS) throw new HttpError(400, 'validation_error', `Ask for at most ${MAX_RANGE_DAYS} days at a time`);
+  const { timetable, input } = await loadEngineInput(userId, timetableId);
+  const days = [];
+  for (let date = from; date <= to; date = nextDate(date)) days.push(overview(dayPlan(input, date)));
+  return { tracking: timetable.tracking, checkpoint: input.checkpoint ? { asOf: input.checkpoint.asOf } : null, days };
+};
+
 const requireTracking = (tracking: boolean) => {
   if (!tracking) throw new HttpError(409, 'not_tracking', 'Press Start Tracking before marking attendance');
 };

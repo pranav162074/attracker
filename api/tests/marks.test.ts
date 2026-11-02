@@ -180,6 +180,52 @@ describe.skipIf(skipWithoutDatabase)('extra classes', () => {
   });
 });
 
+type Overview = { date: string; kind: string; label: string | null; classes: number; held: number; attended: number; absent: number; cancelled: number; extra: number; swapped: number };
+
+describe.skipIf(skipWithoutDatabase)('a range of days', () => {
+  it('sums up each day for a month view, with marks, holidays and extra classes', async () => {
+    const { user, base, ids, at } = await setUp();
+    const monday = (await user.get(`${base}/days/2026-08-03`)).body.day.classes;
+    await user.put(`${base}/days/2026-08-03/classes/${at(monday, '08:40').slotId}`, { attendance: 'absent' });
+    await user.put(`${base}/days/2026-08-03/classes/${at(monday, '12:00').slotId}`, { attendance: 'cancelled' });
+    await user.put(`${base}/days/2026-08-03/classes/${at(monday, '12:50').slotId}`, { attendance: 'present', substituteSubjectId: ids.CN });
+    await user.post(`${base}/days/2026-08-08/extra`, { subjectId: ids.ADSA, start: '09:00', end: '09:50' });
+
+    const res = await user.get(`${base}/days?from=2026-07-19&to=2026-08-31`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ tracking: true, checkpoint: null });
+    const days = res.body.days as Overview[];
+    expect(days).toHaveLength(44);
+    const on = (date: string) => days.find((day) => day.date === date)!;
+    expect(on('2026-07-19')).toMatchObject({ kind: 'outside', classes: 0, held: 0 });
+    expect(on('2026-08-03')).toMatchObject({ kind: 'normal', classes: 5, held: 5, attended: 2, absent: 3, cancelled: 1, swapped: 1, extra: 0 });
+    expect(on('2026-08-04')).toMatchObject({ held: 5, attended: 5, absent: 0 });
+    expect(on('2026-08-08')).toMatchObject({ kind: 'normal', classes: 1, held: 1, attended: 1, extra: 1 });
+    expect(on('2026-08-09')).toMatchObject({ classes: 0, held: 0 });
+    expect(on('2026-08-21')).toMatchObject({ kind: 'holiday', label: 'Vara Lakshmi Vratham', classes: 0 });
+    expect(on('2026-08-22')).toMatchObject({ kind: 'follows_weekday', followsWeekday: 1, held: 6 });
+  });
+
+  it('checks the range it is asked for', async () => {
+    const { user, base } = await setUp({ start: false });
+    const cases: Array<[string, string]> = [
+      ['', 'from must be a date like 2026-07-20'],
+      ['?from=2026-08-01', 'to must be a date like 2026-07-20'],
+      ['?from=2026-08-31&to=2026-08-01', 'to must be on or after from'],
+      ['?from=2026-08-01&to=2026-10-02', 'Ask for at most 62 days at a time'],
+    ];
+    for (const [query, message] of cases) {
+      const res = await user.get(`${base}/days${query}`);
+      expect(res.status, query).toBe(400);
+      expect(res.body.message).toBe(message);
+    }
+    const setup = await user.get(`${base}/days?from=2026-08-01&to=2026-10-01`);
+    expect(setup.status).toBe(200);
+    expect(setup.body.tracking).toBe(false);
+    expect(setup.body.days).toHaveLength(62);
+  });
+});
+
 describe.skipIf(skipWithoutDatabase)('privacy', () => {
   it('keeps days, marks and extra classes to their owner and their timetable', async () => {
     const { user: owner, base, ids, at } = await setUp();
@@ -189,6 +235,7 @@ describe.skipIf(skipWithoutDatabase)('privacy', () => {
 
     for (const res of [
       await intruder.get(`${base}/days/2026-08-03`),
+      await intruder.get(`${base}/days?from=2026-08-01&to=2026-08-31`),
       await intruder.put(`${base}/days/2026-08-03/classes/${slotId}`, { attendance: 'absent' }),
       await intruder.delete(`${base}/days/2026-08-03/classes/${slotId}`),
       await intruder.post(`${base}/days/2026-08-29/extra`, { subjectId: ids.CN, start: '09:00', end: '09:50' }),

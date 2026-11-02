@@ -5,7 +5,7 @@ import { idParam } from '../http/params.ts';
 import { validateBody } from '../middleware/validate.ts';
 import { toMinutes } from '../grid/time.ts';
 import { dateSchema } from '../timetables/schemas.ts';
-import { addExtra, clearMark, deleteExtra, getDay, setMark, updateExtra } from '../attendance/marks.ts';
+import { addExtra, clearMark, deleteExtra, getDay, getDays, setMark, updateExtra } from '../attendance/marks.ts';
 import type { ExtraInput, MarkInput } from '../attendance/marks.ts';
 
 export const dayRoutes = express.Router({ mergeParams: true });
@@ -49,6 +49,14 @@ const extraUpdateSchema = z
     attendance: attendance.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'Send at least one field to change');
+
+dayRoutes.get('/', async (req, res) => {
+  const from = dateSchema('from').safeParse(req.query.from);
+  if (!from.success) throw new HttpError(400, 'validation_error', from.error.issues[0]!.message);
+  const to = dateSchema('to').safeParse(req.query.to);
+  if (!to.success) throw new HttpError(400, 'validation_error', to.error.issues[0]!.message);
+  res.json(await getDays(req.auth!.userId, timetableId(req.params), from.data, to.data));
+});
 
 dayRoutes.get('/:date', async (req, res) => {
   res.json({ day: await getDay(req.auth!.userId, timetableId(req.params), dateParam(req.params.date)) });

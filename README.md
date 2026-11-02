@@ -79,6 +79,7 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | POST | `/timetables/{id}/calendar/bulk` | Add many at once, all or nothing |
 | POST | `/timetables/{id}/calendar/import` | Read a pasted holiday list and preview it, without saving |
 | PATCH, DELETE | `/timetables/{id}/calendar/{dayId}` | Change or remove an entry |
+| GET | `/timetables/{id}/days?from=&to=` | A summary of each day in a range of up to 62 days, for the month view |
 | GET | `/timetables/{id}/days/{date}` | Every class on a day, with its status from the engine |
 | PUT, DELETE | `/timetables/{id}/days/{date}/classes/{slotId}` | Mark a class present, absent or cancelled, or taken by another subject; DELETE undoes |
 | POST | `/timetables/{id}/days/{date}/extra` | Add an extra class |
