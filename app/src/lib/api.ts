@@ -177,6 +177,35 @@ export type Summary = {
   subjects: SubjectTally[];
 };
 
+export type DayClass = {
+  key: string;
+  slotId: number | null;
+  extraId: number | null;
+  subjectId: number;
+  scheduledSubjectId: number;
+  start: string;
+  end: string;
+  units: number;
+  counts: boolean;
+  status: ClassStatus;
+  plannedAbsent: boolean;
+  cancelledBy: 'mark' | 'half_day' | null;
+  beforeCheckpoint: boolean;
+};
+
+export type Day = {
+  date: string;
+  kind: 'outside' | 'holiday' | 'normal' | 'follows_weekday' | 'half_day';
+  label: string | null;
+  followsWeekday: number | null;
+  tracking: boolean;
+  classes: DayClass[];
+};
+
+export type Mark = { attendance: 'present' | 'absent' | 'cancelled'; substituteSubjectId: number | null };
+
+export type ExtraInput = { subjectId: number; start: string; end: string; periods: number; attendance: 'present' | 'absent' };
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -304,6 +333,14 @@ export const createApi = (options: ApiOptions) => {
     updateSubject: (id: number, subjectId: number, changes: Partial<SubjectInput> & { archived?: boolean }) =>
       request<{ subject: Subject }>('PATCH', `/timetables/${id}/subjects/${subjectId}`, changes).then((result) => result.subject),
     summary: (id: number, asOf?: string) => request<{ summary: Summary }>('GET', `/timetables/${id}/summary${asOf ? `?asOf=${asOf}` : ''}`).then((result) => result.summary),
+    day: (id: number, date: string) => request<{ day: Day }>('GET', `/timetables/${id}/days/${date}`).then((result) => result.day),
+    mark: (id: number, date: string, slotId: number, mark: Mark) =>
+      request<{ day: Day }>('PUT', `/timetables/${id}/days/${date}/classes/${slotId}`, mark).then((result) => result.day),
+    clearMark: (id: number, date: string, slotId: number) => request<{ day: Day }>('DELETE', `/timetables/${id}/days/${date}/classes/${slotId}`).then((result) => result.day),
+    addExtra: (id: number, date: string, extra: ExtraInput) => request<{ day: Day }>('POST', `/timetables/${id}/days/${date}/extra`, extra).then((result) => result.day),
+    updateExtra: (id: number, extraId: number, changes: Partial<ExtraInput>) =>
+      request<{ day: Day }>('PATCH', `/timetables/${id}/extra/${extraId}`, changes).then((result) => result.day),
+    deleteExtra: (id: number, extraId: number) => request<{ day: Day }>('DELETE', `/timetables/${id}/extra/${extraId}`).then((result) => result.day),
     grid: (id: number, on?: string) => request<Grid>('GET', `/timetables/${id}/grid${on ? `?on=${on}` : ''}`),
     saveGrid: (id: number, input: GridInput) => request<GridSaved>('PUT', `/timetables/${id}/grid`, input),
     calendar: (id: number) => request<{ days: CalendarDay[] }>('GET', `/timetables/${id}/calendar`).then((result) => result.days),

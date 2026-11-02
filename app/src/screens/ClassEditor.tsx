@@ -10,6 +10,8 @@ import { TextField } from '../ui/TextField.tsx';
 import { colors, space } from '../ui/theme.ts';
 
 type Props = {
+  title?: string;
+  doneLabel?: string;
   weekday: number;
   slot: DraftSlot | null;
   suggestion: { start: number; end: number } | null;
@@ -26,7 +28,7 @@ const readsAs = (text: string) => {
   return minutes === null ? null : `Reads as ${showTime(minutes)}`;
 };
 
-export const ClassEditor = ({ weekday, slot, suggestion, draft, subjects, onDone, onRemove, onClose }: Props) => {
+export const ClassEditor = ({ title, doneLabel, weekday, slot, suggestion, draft, subjects, onDone, onRemove, onClose }: Props) => {
   const [form, setForm] = useState<ClassForm>(() => classFormFor(slot, suggestion));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [periodsTouched, setPeriodsTouched] = useState(slot !== null);
@@ -62,7 +64,7 @@ export const ClassEditor = ({ weekday, slot, suggestion, draft, subjects, onDone
             <Text style={styles.headerAction}>Cancel</Text>
           </Pressable>
           <Text style={styles.headerTitle} role="heading">
-            {slot ? 'Edit class' : 'Add class'}, {WEEKDAY_NAMES[weekday - 1]}
+            {title ?? `${slot ? 'Edit class' : 'Add class'}, ${WEEKDAY_NAMES[weekday - 1]}`}
           </Text>
           <View style={styles.headerButton} />
         </View>
@@ -115,7 +117,7 @@ export const ClassEditor = ({ weekday, slot, suggestion, draft, subjects, onDone
           <Text style={styles.note}>A lab that takes three periods in a row is 3. It counts as 3 classes unless the subject is set to count each class as one.</Text>
 
           <View style={styles.actions}>
-            <Button title={slot ? 'Done' : 'Add'} onPress={done} />
+            <Button title={doneLabel ?? (slot ? 'Done' : 'Add')} onPress={done} />
             {slot ? <Button title="Remove this class" variant="secondary" onPress={() => onRemove(slot.key)} /> : null}
           </View>
         </ScrollView>

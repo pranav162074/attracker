@@ -15,8 +15,8 @@ const loadHome = async () => {
   return { timetables, today };
 };
 
-const TodayRow = ({ item, showTimetable }: { item: TodayClass; showTimetable: boolean }) => (
-  <View style={styles.row}>
+const TodayRow = ({ item, showTimetable, onPress }: { item: TodayClass; showTimetable: boolean; onPress: () => void }) => (
+  <Pressable role="button" aria-label={`${classTitle(item)} at ${formatClock(item.start)}`} onPress={onPress} style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}>
     <Text style={styles.time}>{formatClock(item.start)}</Text>
     <View style={styles.rowMain}>
       <Text style={[styles.rowTitle, item.status === 'cancelled' ? styles.struck : null]}>{classTitle(item)}</Text>
@@ -26,7 +26,7 @@ const TodayRow = ({ item, showTimetable }: { item: TodayClass; showTimetable: bo
       </Text>
     </View>
     <Badge label={statusText(item)} tone={statusTone(item)} />
-  </View>
+  </Pressable>
 );
 
 const TimetableCard = ({ item, onPress }: { item: OverviewItem; onPress: () => void }) => {
@@ -81,7 +81,12 @@ export default function Home() {
           ) : (
             <View style={styles.list}>
               {data.today.map((item) => (
-                <TodayRow key={`${item.timetableId}-${item.key}`} item={item} showTimetable={timetableCount > 1} />
+                <TodayRow
+                  key={`${item.timetableId}-${item.key}`}
+                  item={item}
+                  showTimetable={timetableCount > 1}
+                  onPress={() => router.push(item.tracking ? `/timetables/${item.timetableId}/days/${item.date}` : `/timetables/${item.timetableId}`)}
+                />
               ))}
             </View>
           )}
@@ -133,6 +138,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     backgroundColor: colors.background,
   },
+  rowPressed: { backgroundColor: colors.surface },
   time: { width: 64, fontSize: 14, color: colors.muted },
   rowMain: { flex: 1 },
   rowTitle: { fontSize: 15, color: colors.text, fontWeight: '500' },
