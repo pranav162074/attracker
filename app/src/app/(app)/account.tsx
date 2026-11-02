@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { api, useSession } from '../session.tsx';
-import { problemFrom } from '../lib/forms.ts';
-import { Button } from '../ui/Button.tsx';
-import { ErrorNotice } from '../ui/Notice.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { api, useSession } from '../../session.tsx';
+import { problemFrom } from '../../lib/forms.ts';
+import { Button } from '../../ui/Button.tsx';
+import { ErrorNotice } from '../../ui/Notice.tsx';
+import { colors, space } from '../../ui/theme.ts';
 
 export default function Account() {
   const { state, logOut } = useSession();

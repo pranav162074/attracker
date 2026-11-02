@@ -6,12 +6,12 @@ type Props = {
   onPress: () => void;
   busy?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
 };
 
 export const Button = ({ title, onPress, busy = false, disabled = false, variant = 'primary' }: Props) => {
   const inactive = busy || disabled;
-  const primary = variant === 'primary';
+  const primary = variant !== 'secondary';
   return (
     <Pressable
       role="button"
@@ -23,7 +23,9 @@ export const Button = ({ title, onPress, busy = false, disabled = false, variant
       style={({ pressed }) => [
         styles.base,
         primary ? styles.primary : styles.secondary,
-        pressed && primary ? styles.primaryPressed : null,
+        variant === 'danger' ? styles.danger : null,
+        pressed && variant === 'primary' ? styles.primaryPressed : null,
+        pressed && variant === 'danger' ? styles.dangerPressed : null,
         pressed && !primary ? styles.secondaryPressed : null,
         inactive && primary ? styles.primaryDisabled : null,
       ]}
@@ -42,6 +44,8 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: colors.primary },
   primaryPressed: { backgroundColor: colors.primaryPressed },
   primaryDisabled: { backgroundColor: colors.disabled },
+  danger: { backgroundColor: colors.error },
+  dangerPressed: { backgroundColor: '#8c1d18' },
   secondary: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   secondaryPressed: { backgroundColor: colors.surface },
   text: { fontSize: 16, fontWeight: '600' },
