@@ -146,6 +146,37 @@ export type ImportPreview = {
   skipped: Array<{ line: number; text: string; reason: string }>;
 };
 
+export type Tally = {
+  held: number;
+  attended: number;
+  missed: number;
+  percent: number | null;
+  percentText: string;
+  remaining: number | null;
+  best: number | null;
+  bestText: string | null;
+  lines: Line[];
+};
+
+export type SubjectTally = Tally & {
+  subjectId: number;
+  name: string;
+  shortName: string | null;
+  kind: SubjectKind;
+  colour: string | null;
+  archived: boolean;
+  unitsPerClass: number;
+};
+
+export type Summary = {
+  timetableId: number;
+  status: 'setup' | 'tracking';
+  asOf: { date: string; time: string };
+  checkpoint: { asOf: string } | null;
+  overall: Tally & { zone: Zone; freeHeld: number; freeAttended: number };
+  subjects: SubjectTally[];
+};
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -272,6 +303,7 @@ export const createApi = (options: ApiOptions) => {
       request<{ subject: Subject }>('POST', `/timetables/${id}/subjects`, input).then((result) => result.subject),
     updateSubject: (id: number, subjectId: number, changes: Partial<SubjectInput> & { archived?: boolean }) =>
       request<{ subject: Subject }>('PATCH', `/timetables/${id}/subjects/${subjectId}`, changes).then((result) => result.subject),
+    summary: (id: number, asOf?: string) => request<{ summary: Summary }>('GET', `/timetables/${id}/summary${asOf ? `?asOf=${asOf}` : ''}`).then((result) => result.summary),
     grid: (id: number, on?: string) => request<Grid>('GET', `/timetables/${id}/grid${on ? `?on=${on}` : ''}`),
     saveGrid: (id: number, input: GridInput) => request<GridSaved>('PUT', `/timetables/${id}/grid`, input),
     calendar: (id: number) => request<{ days: CalendarDay[] }>('GET', `/timetables/${id}/calendar`).then((result) => result.days),
