@@ -55,6 +55,60 @@ export type TodayClass = {
   status: ClassStatus;
 };
 
+export type Timetable = {
+  id: number;
+  name: string;
+  startsOn: string;
+  endsOn: string | null;
+  timeZone: string;
+  requiredPercent: number | null;
+  condonationPercent: number | null;
+  archived: boolean;
+  status: 'setup' | 'tracking';
+  trackingStartedAt: string | null;
+};
+
+export type TimetableInput = {
+  name: string;
+  startsOn: string;
+  endsOn: string | null;
+  timeZone?: string;
+  requiredPercent: number | null;
+  condonationPercent: number | null;
+};
+
+export type SubjectKind = 'theory' | 'lab' | 'other';
+
+export type Subject = {
+  id: number;
+  timetableId: number;
+  name: string;
+  shortName: string | null;
+  kind: SubjectKind;
+  countsAttendance: boolean;
+  countPerSession: boolean;
+  colour: string | null;
+  archived: boolean;
+};
+
+export type SubjectInput = {
+  name: string;
+  shortName: string | null;
+  kind: SubjectKind;
+  countsAttendance: boolean;
+  countPerSession: boolean;
+  colour: string | null;
+};
+
+export type SetupStep = {
+  key: 'dates' | 'subjects' | 'grid' | 'holidays';
+  required: boolean;
+  done: boolean;
+  message: string;
+};
+
+export type Setup = { status: 'setup' | 'tracking'; ready: boolean; steps: SetupStep[] };
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -168,6 +222,20 @@ export const createApi = (options: ApiOptions) => {
     logoutAll: () => request<void>('POST', '/auth/logout-all'),
     overview: () => request<{ timetables: OverviewItem[] }>('GET', '/overview').then((result) => result.timetables),
     today: () => request<{ classes: TodayClass[] }>('GET', '/today').then((result) => result.classes),
+    createTimetable: (input: TimetableInput) => request<{ timetable: Timetable }>('POST', '/timetables', input).then((result) => result.timetable),
+    timetable: (id: number) => request<{ timetable: Timetable }>('GET', `/timetables/${id}`).then((result) => result.timetable),
+    updateTimetable: (id: number, changes: Partial<TimetableInput> & { archived?: boolean }) =>
+      request<{ timetable: Timetable }>('PATCH', `/timetables/${id}`, changes).then((result) => result.timetable),
+    deleteTimetable: (id: number) => request<void>('DELETE', `/timetables/${id}`),
+    setup: (id: number) => request<Setup>('GET', `/timetables/${id}/setup`),
+    startTracking: (id: number) => request<{ timetable: Timetable }>('POST', `/timetables/${id}/start`).then((result) => result.timetable),
+    subjects: (id: number, includeArchived = false) =>
+      request<{ subjects: Subject[] }>('GET', `/timetables/${id}/subjects${includeArchived ? '?archived=true' : ''}`).then((result) => result.subjects),
+    createSubject: (id: number, input: SubjectInput) =>
+      request<{ subject: Subject }>('POST', `/timetables/${id}/subjects`, input).then((result) => result.subject),
+    updateSubject: (id: number, subjectId: number, changes: Partial<SubjectInput> & { archived?: boolean }) =>
+      request<{ subject: Subject }>('PATCH', `/timetables/${id}/subjects/${subjectId}`, changes).then((result) => result.subject),
+    deleteSubject: (id: number, subjectId: number) => request<void>('DELETE', `/timetables/${id}/subjects/${subjectId}`),
   };
 };
 

@@ -98,6 +98,41 @@ describe('the API client', () => {
     ]);
   });
 
+  it('sends timetable and subject changes to the right places', async () => {
+    const { fn, calls } = fakeFetch(({ init }) => {
+      if (init.method === 'DELETE') return new Response(null, { status: 204 });
+      return json(200, { timetable: { id: 7 }, subject: { id: 9 }, subjects: [{ id: 9 }], status: 'setup', ready: false, steps: [] });
+    });
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    const input = { name: 'Dance', startsOn: '2026-09-01', endsOn: null, requiredPercent: null, condonationPercent: null };
+    const subject = { name: 'Kuchipudi', shortName: null, kind: 'theory' as const, countsAttendance: true, countPerSession: false, colour: null };
+
+    expect(await api.createTimetable(input)).toEqual({ id: 7 });
+    await api.updateTimetable(7, { name: 'Dance class' });
+    await api.setup(7);
+    await api.startTracking(7);
+    expect(await api.subjects(7, true)).toEqual([{ id: 9 }]);
+    await api.subjects(7);
+    expect(await api.createSubject(7, subject)).toEqual({ id: 9 });
+    await api.updateSubject(7, 9, { archived: true });
+    await api.deleteSubject(7, 9);
+    await api.deleteTimetable(7);
+
+    expect(calls.map((call) => `${call.init.method} ${call.url.replace('http://x', '')}`)).toEqual([
+      'POST /timetables',
+      'PATCH /timetables/7',
+      'GET /timetables/7/setup',
+      'POST /timetables/7/start',
+      'GET /timetables/7/subjects?archived=true',
+      'GET /timetables/7/subjects',
+      'POST /timetables/7/subjects',
+      'PATCH /timetables/7/subjects/9',
+      'DELETE /timetables/7/subjects/9',
+      'DELETE /timetables/7',
+    ]);
+    expect(JSON.parse(calls[7]!.init.body as string)).toEqual({ archived: true });
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });

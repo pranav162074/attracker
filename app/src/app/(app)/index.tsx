@@ -1,14 +1,14 @@
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Link } from 'expo-router';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { api } from '../session.tsx';
-import type { OverviewItem, TodayClass } from '../lib/api.ts';
-import { classTitle, formatClock, formatDay, localDate, overviewLine, requiredMessage, statusText, statusTone, zoneBadge } from '../lib/format.ts';
-import { useLoad } from '../useLoad.ts';
-import { Badge } from '../ui/Badge.tsx';
-import { Button } from '../ui/Button.tsx';
-import { ErrorNotice } from '../ui/Notice.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { api } from '../../session.tsx';
+import type { OverviewItem, TodayClass } from '../../lib/api.ts';
+import { classTitle, formatClock, formatDay, localDate, overviewLine, requiredMessage, statusText, statusTone, zoneBadge } from '../../lib/format.ts';
+import { useLoad } from '../../useLoad.ts';
+import { Badge } from '../../ui/Badge.tsx';
+import { Button } from '../../ui/Button.tsx';
+import { ErrorNotice } from '../../ui/Notice.tsx';
+import { colors, space } from '../../ui/theme.ts';
 
 const loadHome = async () => {
   const [timetables, today] = await Promise.all([api.overview(), api.today()]);
@@ -29,11 +29,11 @@ const TodayRow = ({ item, showTimetable }: { item: TodayClass; showTimetable: bo
   </View>
 );
 
-const TimetableCard = ({ item }: { item: OverviewItem }) => {
+const TimetableCard = ({ item, onPress }: { item: OverviewItem; onPress: () => void }) => {
   const badge = item.status === 'setup' ? { label: 'Setting up', tone: 'neutral' as const } : zoneBadge(item.zone);
   const message = item.status === 'tracking' && item.held > 0 ? requiredMessage(item.required) : null;
   return (
-    <View style={styles.card}>
+    <Pressable role="button" aria-label={item.name} onPress={onPress} style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}>
       <View style={styles.cardTop}>
         <Text style={styles.cardName}>{item.name}</Text>
         {badge ? <Badge label={badge.label} tone={badge.tone} /> : null}
@@ -41,11 +41,12 @@ const TimetableCard = ({ item }: { item: OverviewItem }) => {
       {item.status === 'tracking' && item.percent !== null ? <Text style={styles.percent}>{item.percentText}%</Text> : null}
       <Text style={styles.cardLine}>{overviewLine(item)}</Text>
       {message ? <Text style={styles.cardMessage}>{message}</Text> : null}
-    </View>
+    </Pressable>
   );
 };
 
 export default function Home() {
+  const router = useRouter();
   const { data, error, loading, refreshing, refresh } = useLoad(loadHome);
   const todayDate = data?.today[0]?.date ?? localDate();
   const timetableCount = new Set(data?.today.map((item) => item.timetableId)).size;
@@ -89,10 +90,13 @@ export default function Home() {
             Timetables
           </Text>
           {data.timetables.length === 0 ? (
-            <Text style={styles.empty}>You have no timetables yet.</Text>
+            <Text style={styles.empty}>You have no timetables yet. Add your college timetable first, then anything else you attend, like tuition or dance.</Text>
           ) : (
-            data.timetables.map((item) => <TimetableCard key={item.timetableId} item={item} />)
+            data.timetables.map((item) => <TimetableCard key={item.timetableId} item={item} onPress={() => router.push(`/timetables/${item.timetableId}`)} />)
           )}
+          <View style={styles.newButton}>
+            <Button title="New timetable" variant={data.timetables.length === 0 ? 'primary' : 'secondary'} onPress={() => router.push('/timetables/new')} />
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -117,7 +121,7 @@ const styles = StyleSheet.create({
   section: { fontSize: 20, fontWeight: '600', color: colors.text },
   sectionGap: { marginTop: space.xxl, marginBottom: space.md },
   sectionSub: { fontSize: 14, color: colors.muted, marginTop: 2, marginBottom: space.md },
-  empty: { fontSize: 15, color: colors.muted },
+  empty: { fontSize: 15, color: colors.muted, lineHeight: 21 },
   list: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' },
   row: {
     flexDirection: 'row',
@@ -134,7 +138,9 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 15, color: colors.text, fontWeight: '500' },
   rowSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
   struck: { textDecorationLine: 'line-through', color: colors.muted },
-  card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, marginBottom: space.md },
+  card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, marginBottom: space.md, backgroundColor: colors.background },
+  cardPressed: { backgroundColor: colors.surface },
+  newButton: { marginTop: space.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space.md },
   cardName: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
   percent: { fontSize: 32, fontWeight: '600', color: colors.text, marginTop: space.sm },
