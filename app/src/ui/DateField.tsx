@@ -11,12 +11,13 @@ type Props = {
   error?: string | undefined;
   optional?: boolean;
   hint?: string;
+  near?: string | null;
 };
 
-const Calendar = ({ value, onPick }: { value: string | null; onPick: (iso: string) => void }) => {
+const Calendar = ({ value, near, onPick }: { value: string | null; near: string | null; onPick: (iso: string) => void }) => {
   const today = localDate();
   const [view, setView] = useState(() => {
-    const { year, month } = parseIso(value ?? today);
+    const { year, month } = parseIso(value ?? near ?? today);
     return { year, month };
   });
   const weeks = monthGrid(view.year, view.month);
@@ -72,7 +73,7 @@ const Calendar = ({ value, onPick }: { value: string | null; onPick: (iso: strin
   );
 };
 
-export const DateField = ({ label, value, onChange, error, optional = false, hint }: Props) => {
+export const DateField = ({ label, value, onChange, error, optional = false, hint, near = null }: Props) => {
   const [open, setOpen] = useState(false);
   return (
     <View style={styles.wrap}>
@@ -87,6 +88,7 @@ export const DateField = ({ label, value, onChange, error, optional = false, hin
             <Text style={styles.sheetTitle}>{label}</Text>
             <Calendar
               value={value}
+              near={near}
               onPick={(iso) => {
                 onChange(iso);
                 setOpen(false);

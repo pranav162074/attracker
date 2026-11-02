@@ -127,6 +127,25 @@ export type GridSaved = {
   summary: { created: boolean; kept: number; changed: number; added: number; removed: number; discardedMarks: number };
 };
 
+export type CalendarKind = 'holiday' | 'follows_weekday' | 'no_classes_before' | 'no_classes_after';
+
+export type CalendarDay = {
+  id: number;
+  kind: CalendarKind;
+  startsOn: string;
+  endsOn: string;
+  followsWeekday: number | null;
+  cutoff: string | null;
+  label: string | null;
+};
+
+export type CalendarDayInput = Omit<CalendarDay, 'id'>;
+
+export type ImportPreview = {
+  holidays: Array<{ startsOn: string; endsOn: string; label: string | null; source: string; warnings: string[]; problems: string[] }>;
+  skipped: Array<{ line: number; text: string; reason: string }>;
+};
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -255,6 +274,13 @@ export const createApi = (options: ApiOptions) => {
       request<{ subject: Subject }>('PATCH', `/timetables/${id}/subjects/${subjectId}`, changes).then((result) => result.subject),
     grid: (id: number, on?: string) => request<Grid>('GET', `/timetables/${id}/grid${on ? `?on=${on}` : ''}`),
     saveGrid: (id: number, input: GridInput) => request<GridSaved>('PUT', `/timetables/${id}/grid`, input),
+    calendar: (id: number) => request<{ days: CalendarDay[] }>('GET', `/timetables/${id}/calendar`).then((result) => result.days),
+    addDay: (id: number, input: CalendarDayInput) => request<{ day: CalendarDay }>('POST', `/timetables/${id}/calendar`, input).then((result) => result.day),
+    addDays: (id: number, days: CalendarDayInput[]) => request<{ days: CalendarDay[] }>('POST', `/timetables/${id}/calendar/bulk`, { days }).then((result) => result.days),
+    updateDay: (id: number, dayId: number, input: CalendarDayInput) =>
+      request<{ day: CalendarDay }>('PATCH', `/timetables/${id}/calendar/${dayId}`, input).then((result) => result.day),
+    deleteDay: (id: number, dayId: number) => request<void>('DELETE', `/timetables/${id}/calendar/${dayId}`),
+    previewImport: (id: number, text: string) => request<ImportPreview>('POST', `/timetables/${id}/calendar/import`, { text }),
     deleteSubject: (id: number, subjectId: number) => request<void>('DELETE', `/timetables/${id}/subjects/${subjectId}`),
   };
 };

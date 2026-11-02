@@ -20,6 +20,9 @@ export default function SignedInLayout() {
       <Stack.Screen name="timetables/[id]/details" options={{ title: 'Dates and rules' }} />
       <Stack.Screen name="timetables/[id]/grid" options={{ title: 'Weekly timetable' }} />
       <Stack.Screen name="timetables/[id]/subjects/index" options={{ title: 'Subjects' }} />
+      <Stack.Screen name="timetables/[id]/calendar/index" options={{ title: 'Holidays and special days' }} />
+      <Stack.Screen name="timetables/[id]/calendar/import" options={{ title: 'Paste holidays' }} />
+      <Stack.Screen name="timetables/[id]/calendar/[dayId]" options={{ title: 'Day' }} />
       <Stack.Screen name="timetables/[id]/subjects/[subjectId]" options={{ title: 'Subject' }} />
     </Stack>
   );
