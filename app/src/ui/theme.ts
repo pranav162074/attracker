@@ -11,4 +11,11 @@ export const colors = {
   errorBackground: '#fdecea',
 };
 
+export const tones = {
+  good: { text: '#1b6b2f', background: '#e5f3e8' },
+  warn: { text: '#8a4b00', background: '#fdf0dc' },
+  bad: { text: '#b3261e', background: '#fdecea' },
+  neutral: { text: '#5f6368', background: '#f1f3f4' },
+};
+
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

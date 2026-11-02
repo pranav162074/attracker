@@ -11,6 +11,50 @@ export type AuthResult = {
   expiresAt: string;
 };
 
+export type Zone = 'safe' | 'condonation' | 'below' | null;
+
+export type Line = {
+  name: 'required' | 'condonation';
+  percent: number;
+  met: boolean;
+  canMiss: number;
+  need: number | null;
+  reachable: boolean | null;
+};
+
+export type OverviewItem = {
+  timetableId: number;
+  name: string;
+  status: 'tracking' | 'setup';
+  percent: number | null;
+  percentText: string;
+  zone: Zone;
+  held: number;
+  attended: number;
+  required: Line | null;
+};
+
+export type ClassStatus = 'attended' | 'absent' | 'cancelled' | 'upcoming';
+
+export type TodayClass = {
+  timetableId: number;
+  timetableName: string;
+  tracking: boolean;
+  date: string;
+  key: string;
+  slotId: number | null;
+  extraId: number | null;
+  subjectId: number;
+  subjectName: string | null;
+  shortName: string | null;
+  colour: string | null;
+  start: string;
+  end: string;
+  units: number;
+  counts: boolean;
+  status: ClassStatus;
+};
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -122,6 +166,8 @@ export const createApi = (options: ApiOptions) => {
     me: () => request<{ user: User }>('GET', '/auth/me').then((result) => result.user),
     logout: () => request<void>('POST', '/auth/logout'),
     logoutAll: () => request<void>('POST', '/auth/logout-all'),
+    overview: () => request<{ timetables: OverviewItem[] }>('GET', '/overview').then((result) => result.timetables),
+    today: () => request<{ classes: TodayClass[] }>('GET', '/today').then((result) => result.classes),
   };
 };
 
