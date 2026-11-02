@@ -26,15 +26,26 @@ const plural = (count: number, one: string, many = `${one}es`) => `${count} ${co
 
 export const classes = (count: number) => plural(count, 'class');
 
-export const requiredMessage = (line: Line | null) => {
+export const amount = (count: number, unitsPerClass = 1, round: 'down' | 'up' = 'down') => {
+  if (unitsPerClass <= 1) return classes(count);
+  const sessions = round === 'down' ? Math.floor(count / unitsPerClass) : Math.ceil(count / unitsPerClass);
+  const periods = `${count} ${count === 1 ? 'period' : 'periods'}`;
+  if (sessions === 0) return `${periods}, less than one full session`;
+  return `${periods} (${sessions} ${sessions === 1 ? 'session' : 'sessions'})`;
+};
+
+export const lineMessage = (line: Line | null | undefined, unitsPerClass = 1) => {
   if (!line) return null;
   const target = `${line.percent}%`;
-  if (line.met && line.canMiss > 0) return `You can miss ${classes(line.canMiss)} and stay at ${target} or above.`;
+  if (line.met && line.canMiss > 0) return `You can miss ${amount(line.canMiss, unitsPerClass)} and stay at ${target} or above.`;
   if (line.met) return `You are just at ${target}. Missing the next class takes you below it.`;
   if (line.reachable === false) return `${target} can no longer be reached this term.`;
   if (line.need === null) return null;
-  return `Attend the next ${classes(line.need)} to get back to ${target}.`;
+  if (line.need === 1) return `Attend the next ${unitsPerClass > 1 ? 'period' : 'class'} to get back to ${target}.`;
+  return `Attend the next ${amount(line.need, unitsPerClass, 'up')} to get back to ${target}.`;
 };
+
+export const requiredMessage = (line: Line | null) => lineMessage(line);
 
 export type Tone = 'good' | 'warn' | 'bad' | 'neutral';
 

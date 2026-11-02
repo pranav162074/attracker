@@ -172,6 +172,14 @@ describe('the API client', () => {
     expect(JSON.parse(calls[5]!.init.body as string)).toEqual({ text: '15-08-2026 Independence Day' });
   });
 
+  it('fetches a timetable summary, now or on a date', async () => {
+    const { fn, calls } = fakeFetch(() => json(200, { summary: { timetableId: 7 } }));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    expect(await api.summary(7)).toEqual({ timetableId: 7 });
+    await api.summary(7, '2026-09-30');
+    expect(calls.map((call) => call.url)).toEqual(['http://x/timetables/7/summary', 'http://x/timetables/7/summary?asOf=2026-09-30']);
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });

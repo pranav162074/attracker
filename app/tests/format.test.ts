@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Line, OverviewItem } from '../src/lib/api.ts';
-import { classTitle, formatClock, formatDay, localDate, overviewLine, requiredMessage, statusText, statusTone, zoneBadge } from '../src/lib/format.ts';
+import { classTitle, formatClock, lineMessage, formatDay, localDate, overviewLine, requiredMessage, statusText, statusTone, zoneBadge } from '../src/lib/format.ts';
 
 const line = (values: Partial<Line>): Line => ({ name: 'required', percent: 75, met: true, canMiss: 0, need: 0, reachable: true, ...values });
 
@@ -50,7 +50,8 @@ describe('what the required percentage means for you', () => {
 
   it('says how many classes in a row get you back', () => {
     expect(requiredMessage(line({ met: false, need: 138, reachable: true }))).toBe('Attend the next 138 classes to get back to 75%.');
-    expect(requiredMessage(line({ met: false, need: 1, reachable: null }))).toBe('Attend the next 1 class to get back to 75%.');
+    expect(requiredMessage(line({ met: false, need: 1, reachable: null }))).toBe('Attend the next class to get back to 75%.');
+    expect(lineMessage(line({ met: false, need: 1 }), 3)).toBe('Attend the next period to get back to 75%.');
   });
 
   it('says plainly when the line is out of reach', () => {
