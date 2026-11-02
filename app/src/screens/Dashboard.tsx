@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Summary } from '../lib/api.ts';
 import { condonationMessage, findLine, missedLine, outlookMessage, sourceNote, subjectCount, subjectTone } from '../lib/dashboard.ts';
 import { lineMessage, zoneBadge } from '../lib/format.ts';
@@ -7,7 +7,7 @@ import { Dot } from '../ui/Controls.tsx';
 import { SectionTitle } from '../ui/Page.tsx';
 import { colors, space, tones } from '../ui/theme.ts';
 
-export const Dashboard = ({ summary }: { summary: Summary }) => {
+export const Dashboard = ({ summary, onOpenSubject }: { summary: Summary; onOpenSubject: (subjectId: number) => void }) => {
   const { overall } = summary;
   const badge = zoneBadge(overall.zone);
   const counts = overall.held === 0 ? 'No classes have been held yet.' : [`${overall.attended} of ${overall.held} attended`, missedLine(overall)].filter(Boolean).join(' · ');
@@ -42,7 +42,13 @@ export const Dashboard = ({ summary }: { summary: Summary }) => {
             const tone = subjectTone(row);
             const message = row.held === 0 ? null : lineMessage(findLine(row, 'required'), row.unitsPerClass);
             return (
-              <View key={row.subjectId} style={styles.row}>
+              <Pressable
+                key={row.subjectId}
+                role="button"
+                aria-label={row.name}
+                onPress={() => onOpenSubject(row.subjectId)}
+                style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+              >
                 <View style={styles.dot}>
                   <Dot colour={row.colour} />
                 </View>
@@ -55,7 +61,7 @@ export const Dashboard = ({ summary }: { summary: Summary }) => {
                   {message ? <Text style={styles.rowDetail}>{message}</Text> : null}
                 </View>
                 <Text style={[styles.rowPercent, { color: tone === 'neutral' ? colors.muted : tones[tone].text }]}>{row.percent === null ? '–' : `${row.percentText}%`}</Text>
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -84,6 +90,7 @@ const styles = StyleSheet.create({
   },
   dot: { paddingTop: 4 },
   rowMain: { flex: 1 },
+  rowPressed: { backgroundColor: colors.surface },
   rowTitle: { fontSize: 15, color: colors.text, fontWeight: '500' },
   rowDetail: { fontSize: 13, color: colors.muted, marginTop: 2, lineHeight: 18 },
   rowPercent: { fontSize: 16, fontWeight: '600', minWidth: 64, textAlign: 'right' },

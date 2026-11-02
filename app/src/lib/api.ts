@@ -224,6 +224,18 @@ export type DayOverview = {
 
 export type DayRange = { tracking: boolean; checkpoint: { asOf: string } | null; days: DayOverview[] };
 
+export type HistoryEvent = {
+  date: string;
+  start: string;
+  end: string;
+  units: number;
+  kind: 'absent' | 'planned_absent' | 'cancelled' | 'extra' | 'took_over' | 'taken_by_other';
+  otherSubjectId: number | null;
+  beforeCheckpoint: boolean;
+};
+
+export type SubjectHistory = { checkpoint: { asOf: string } | null; events: HistoryEvent[] };
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -369,6 +381,7 @@ export const createApi = (options: ApiOptions) => {
       request<{ day: CalendarDay }>('PATCH', `/timetables/${id}/calendar/${dayId}`, input).then((result) => result.day),
     deleteDay: (id: number, dayId: number) => request<void>('DELETE', `/timetables/${id}/calendar/${dayId}`),
     previewImport: (id: number, text: string) => request<ImportPreview>('POST', `/timetables/${id}/calendar/import`, { text }),
+    subjectHistory: (id: number, subjectId: number) => request<SubjectHistory>('GET', `/timetables/${id}/subjects/${subjectId}/history`),
     deleteSubject: (id: number, subjectId: number) => request<void>('DELETE', `/timetables/${id}/subjects/${subjectId}`),
   };
 };

@@ -84,7 +84,7 @@ export default function TimetableScreen() {
               <Button title="Month view" variant="secondary" onPress={() => router.push(`${base}/month`)} />
             </View>
           </View>
-          <Dashboard summary={summary} />
+          <Dashboard summary={summary} onOpenSubject={(subjectId) => router.push(`${base}/subject/${subjectId}`)} />
         </>
       ) : null}
       {tracking ? (

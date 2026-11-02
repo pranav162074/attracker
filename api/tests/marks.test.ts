@@ -226,6 +226,44 @@ describe.skipIf(skipWithoutDatabase)('a range of days', () => {
   });
 });
 
+describe.skipIf(skipWithoutDatabase)('a subject’s history', () => {
+  it('lists missed, cancelled, planned, extra and swapped classes for the subject', async () => {
+    const { user, base, ids, at } = await setUp();
+    const classesOn = async (date: string) => (await user.get(`${base}/days/${date}`)).body.day.classes as Class[];
+    await user.put(`${base}/days/2026-08-03/classes/${at(await classesOn('2026-08-03'), '08:40').slotId}`, { attendance: 'absent' });
+    await user.put(`${base}/days/2026-08-10/classes/${at(await classesOn('2026-08-10'), '12:50').slotId}`, { attendance: 'present', substituteSubjectId: ids.CN });
+    await user.put(`${base}/days/2026-08-17/classes/${at(await classesOn('2026-08-17'), '12:00').slotId}`, { attendance: 'cancelled' });
+    await user.post(`${base}/days/2026-08-08/extra`, { subjectId: ids.CN, start: '09:00', end: '09:50', attendance: 'absent' });
+    await user.put(`${base}/days/2026-11-09/classes/${at(await classesOn('2026-11-09'), '08:40').slotId}`, { attendance: 'absent' });
+
+    const history = async (key: SubjectKey) => (await user.get(`${base}/subjects/${ids[key]}/history`)).body;
+    const lab = await history('OOADL');
+    expect(lab.checkpoint).toBeNull();
+    expect(lab.events).toEqual([
+      { date: '2026-08-03', start: '08:40', end: '11:10', units: 3, kind: 'absent', otherSubjectId: null, beforeCheckpoint: false },
+      { date: '2026-11-09', start: '08:40', end: '11:10', units: 3, kind: 'planned_absent', otherSubjectId: null, beforeCheckpoint: false },
+    ]);
+    expect((await history('CN')).events.map((event: { date: string; kind: string; otherSubjectId: number | null }) => [event.date, event.kind, event.otherSubjectId])).toEqual([
+      ['2026-08-08', 'absent', null],
+      ['2026-08-10', 'took_over', ids.OOAD],
+    ]);
+    expect((await history('OOAD')).events.map((event: { date: string; kind: string; otherSubjectId: number | null }) => [event.date, event.kind, event.otherSubjectId])).toEqual([
+      ['2026-08-10', 'taken_by_other', ids.CN],
+    ]);
+    expect((await history('DWDM')).events.map((event: { date: string; kind: string }) => [event.date, event.kind])).toEqual([['2026-08-17', 'cancelled']]);
+    expect((await history('ADSA')).events).toEqual([]);
+  });
+
+  it('is only for subjects of this timetable', async () => {
+    const { user, base } = await setUp({ start: false });
+    const other = (await user.post('/timetables', { name: 'Dance', startsOn: '2026-08-01' })).body.timetable;
+    const foreign = (await user.post(`/timetables/${other.id}/subjects`, { name: 'Kuchipudi' })).body.subject;
+    const res = await user.get(`${base}/subjects/${foreign.id}/history`);
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('Subject not found');
+  });
+});
+
 describe.skipIf(skipWithoutDatabase)('privacy', () => {
   it('keeps days, marks and extra classes to their owner and their timetable', async () => {
     const { user: owner, base, ids, at } = await setUp();
@@ -236,6 +274,7 @@ describe.skipIf(skipWithoutDatabase)('privacy', () => {
     for (const res of [
       await intruder.get(`${base}/days/2026-08-03`),
       await intruder.get(`${base}/days?from=2026-08-01&to=2026-08-31`),
+      await intruder.get(`${base}/subjects/${ids.CN}/history`),
       await intruder.put(`${base}/days/2026-08-03/classes/${slotId}`, { attendance: 'absent' }),
       await intruder.delete(`${base}/days/2026-08-03/classes/${slotId}`),
       await intruder.post(`${base}/days/2026-08-29/extra`, { subjectId: ids.CN, start: '09:00', end: '09:50' }),

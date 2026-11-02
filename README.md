@@ -70,6 +70,7 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/timetables/{id}/setup` | Checklist of what is filled in, and whether tracking can start |
 | POST | `/timetables/{id}/start` | Start tracking |
 | GET, POST | `/timetables/{id}/subjects` | List (`?archived=true` for all) or add subjects |
+| GET | `/timetables/{id}/subjects/{subjectId}/history` | Every class of a subject that was missed, cancelled, planned to be missed, extra, or swapped with another subject |
 | PATCH, DELETE | `/timetables/{id}/subjects/{subjectId}` | Change, archive, or delete an unused subject |
 | GET | `/timetables/{id}/grid` | The weekly grid in effect today, or on `?on=YYYY-MM-DD` |
 | PUT | `/timetables/{id}/grid` | Save a grid from a date (`{ effectiveFrom, slots, discardMarks? }`) |
