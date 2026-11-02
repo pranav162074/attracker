@@ -87,6 +87,17 @@ describe('the API client', () => {
     expect(onUnauthorized).toHaveBeenCalledOnce();
   });
 
+  it('fetches the home screen lists', async () => {
+    const { fn, calls } = fakeFetch(({ url }) => (url.endsWith('/overview') ? json(200, { timetables: [{ timetableId: 3 }] }) : json(200, { classes: [{ key: 'slot:1' }] })));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    expect(await api.overview()).toEqual([{ timetableId: 3 }]);
+    expect(await api.today()).toEqual([{ key: 'slot:1' }]);
+    expect(calls.map((call) => [call.init.method, call.url])).toEqual([
+      ['GET', 'http://x/overview'],
+      ['GET', 'http://x/today'],
+    ]);
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
