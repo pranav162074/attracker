@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { api } from '../../../../session.tsx';
 import type { SetupStep, Timetable } from '../../../../lib/api.ts';
 import { formatDate, friendlyDates } from '../../../../lib/dates.ts';
+import { localDate } from '../../../../lib/format.ts';
 import { problemFrom } from '../../../../lib/forms.ts';
 import { STEP_TITLES } from '../../../../lib/setupForms.ts';
 import { Dashboard } from '../../../../screens/Dashboard.tsx';
@@ -73,7 +74,14 @@ export default function TimetableScreen() {
     <Page refreshing={refreshing} onRefresh={refresh}>
       <Stack.Screen options={{ title: timetable.name }} />
       <ErrorNotice message={message ?? error} />
-      {summary ? <Dashboard summary={summary} /> : null}
+      {summary ? (
+        <>
+          <View style={styles.markButton}>
+            <Button title="Mark attendance" onPress={() => router.push(`${base}/days/${localDate()}`)} />
+          </View>
+          <Dashboard summary={summary} />
+        </>
+      ) : null}
       {tracking ? (
         <>
           <SectionTitle>Timetable</SectionTitle>
@@ -109,5 +117,6 @@ const styles = StyleSheet.create({
   markText: { fontSize: 13, color: colors.muted, fontWeight: '600' },
   markTextDone: { color: tones.good.text },
   start: { marginTop: space.xl },
+  markButton: { marginBottom: space.lg },
   startNote: { fontSize: 13, color: colors.muted, marginTop: space.sm, textAlign: 'center' },
 });

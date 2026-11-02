@@ -1,0 +1,347 @@
+import { useCallback, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { api } from '../../../../../session.tsx';
+import type { Day, DayClass, Subject } from '../../../../../lib/api.ts';
+import { isRealIso } from '../../../../../lib/dates.ts';
+import { canMark, choiceOf, dayNotes, dayTitle, dayTotals, markFor, shiftDay, statusLine } from '../../../../../lib/day.ts';
+import type { Choice } from '../../../../../lib/day.ts';
+import { localDate } from '../../../../../lib/format.ts';
+import { problemFrom } from '../../../../../lib/forms.ts';
+import { clockToMinutes, minutesToClock, showTime } from '../../../../../lib/grid.ts';
+import type { DraftSlot } from '../../../../../lib/grid.ts';
+import { ClassEditor } from '../../../../../screens/ClassEditor.tsx';
+import { useLoad } from '../../../../../useLoad.ts';
+import { Button } from '../../../../../ui/Button.tsx';
+import { Dot } from '../../../../../ui/Controls.tsx';
+import { ErrorNotice } from '../../../../../ui/Notice.tsx';
+import { LoadFailed, Loading, Muted, Page } from '../../../../../ui/Page.tsx';
+import { colors, space, tones } from '../../../../../ui/theme.ts';
+
+const CHOICES: { value: Choice; label: string }[] = [
+  { value: 'present', label: 'Present' },
+  { value: 'absent', label: 'Absent' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const choiceColours: Record<Choice, { background: string; text: string }> = {
+  present: { background: tones.good.text, text: '#ffffff' },
+  absent: { background: tones.bad.text, text: '#ffffff' },
+  cancelled: { background: colors.muted, text: '#ffffff' },
+};
+
+const loadDay = async (id: number, date: string) => {
+  const [timetable, subjects, day] = await Promise.all([api.timetable(id), api.subjects(id, true), api.day(id, date)]);
+  return { timetable, subjects, day };
+};
+
+type Editing = { kind: 'extra'; item: DayClass | null } | { kind: 'substitute'; item: DayClass };
+
+const Choices = ({
+  options,
+  current,
+  busy,
+  label,
+  onChoose,
+}: {
+  options: typeof CHOICES;
+  current: Choice;
+  busy: boolean;
+  label: string;
+  onChoose: (choice: Choice) => void;
+}) => (
+  <View style={styles.choices} role="radiogroup" aria-label={label}>
+    {options.map((option) => {
+      const selected = option.value === current;
+      const colour = choiceColours[option.value];
+      return (
+        <Pressable
+          key={option.value}
+          role="radio"
+          aria-checked={selected}
+          aria-label={option.label}
+          disabled={busy}
+          onPress={() => {
+            if (!selected) onChoose(option.value);
+          }}
+          style={[styles.choice, selected ? { backgroundColor: colour.background, borderColor: colour.background } : null]}
+        >
+          <Text style={[styles.choiceText, selected ? { color: colour.text } : null]}>{option.label}</Text>
+        </Pressable>
+      );
+    })}
+  </View>
+);
+
+const ClassRow = ({
+  item,
+  day,
+  byId,
+  busy,
+  onChoose,
+  onMore,
+}: {
+  item: DayClass;
+  day: Day;
+  byId: Map<number, Subject>;
+  busy: boolean;
+  onChoose: (choice: Choice) => void;
+  onMore: () => void;
+}) => {
+  const subject = byId.get(item.subjectId);
+  const scheduled = byId.get(item.scheduledSubjectId);
+  const swapped = item.subjectId !== item.scheduledSubjectId;
+  const extra = item.extraId !== null;
+  const current = choiceOf(item);
+  const markable = canMark(day, item);
+  const options = extra ? CHOICES.filter((choice) => choice.value !== 'cancelled') : CHOICES;
+  const detail = [`${showTime(clockToMinutes(item.start))} to ${showTime(clockToMinutes(item.end))}`, item.units > 1 ? `${item.units} periods` : null, extra ? 'extra class' : null]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <View style={[styles.row, busy ? styles.rowBusy : null]}>
+      <View style={styles.rowTop}>
+        <View style={styles.dot}>
+          <Dot colour={subject?.colour ?? null} />
+        </View>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowTitle, item.status === 'cancelled' ? styles.struck : null]}>
+            {subject?.name ?? 'Class'}
+            {swapped ? ` (instead of ${scheduled?.name ?? 'another subject'})` : ''}
+          </Text>
+          <Text style={styles.rowDetail}>{detail}</Text>
+          <Text style={styles.rowStatus}>{statusLine(item)}</Text>
+        </View>
+      </View>
+      {markable ? (
+        <View style={styles.actions}>
+          {item.counts || swapped ? (
+            <Choices
+              options={options}
+              current={current}
+              busy={busy}
+              label={`Attendance for ${subject?.name ?? 'class'} at ${showTime(clockToMinutes(item.start))}`}
+              onChoose={onChoose}
+            />
+          ) : null}
+          <Pressable role="button" aria-label={extra ? 'Edit extra class' : 'Taken by another subject'} onPress={onMore} disabled={busy} style={styles.more}>
+            <Text style={styles.moreText}>{extra ? 'Edit' : 'Other subject'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
+const SubstitutePicker = ({ item, subjects, onPick, onClose }: { item: DayClass; subjects: Subject[]; onPick: (subjectId: number) => void; onClose: () => void }) => (
+  <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={styles.sheet} onPress={() => {}}>
+        <Text style={styles.sheetTitle}>Who took this class?</Text>
+        <Text style={styles.sheetNote}>Pick the subject that was actually taught. Attendance counts for that subject instead.</Text>
+        <ScrollView style={styles.sheetList}>
+          {subjects
+            .filter((subject) => !subject.archived)
+            .map((subject) => (
+              <Pressable key={subject.id} role="button" aria-label={subject.name} onPress={() => onPick(subject.id)} style={styles.sheetRow}>
+                <Dot colour={subject.colour} />
+                <Text style={[styles.sheetRowText, subject.id === item.subjectId ? styles.sheetRowCurrent : null]}>
+                  {subject.name}
+                  {subject.id === item.scheduledSubjectId ? ' (as scheduled)' : ''}
+                </Text>
+              </Pressable>
+            ))}
+        </ScrollView>
+        <Pressable role="button" onPress={onClose} style={styles.sheetCancel}>
+          <Text style={styles.sheetCancelText}>Cancel</Text>
+        </Pressable>
+      </Pressable>
+    </Pressable>
+  </Modal>
+);
+
+export default function DayScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ id: string; date: string }>();
+  const timetableId = Number(params.id);
+  const today = localDate();
+  const date = params.date && isRealIso(params.date) ? params.date : today;
+  const load = useCallback(() => loadDay(timetableId, date), [timetableId, date]);
+  const { data, error, loading, refreshing, refresh } = useLoad(load);
+  const [override, setOverride] = useState<{ base: typeof data; day: Day } | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
+
+  if (loading) return <Loading />;
+  if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
+
+  const day = override && override.base === data ? override.day : data.day;
+  const stale = day.date !== date;
+  const byId = new Map(data.subjects.map((subject) => [subject.id, subject]));
+  const go = (next: string) => {
+    setMessage(null);
+    router.setParams({ date: next });
+  };
+
+  const run = async (key: string, action: () => Promise<Day>) => {
+    setBusyKey(key);
+    setMessage(null);
+    try {
+      setOverride({ base: data, day: await action() });
+    } catch (failure) {
+      setMessage(problemFrom(failure).message);
+    }
+    setBusyKey(null);
+  };
+
+  const choose = (item: DayClass, choice: Choice) => {
+    if (item.extraId !== null) {
+      run(item.key, () => api.updateExtra(timetableId, item.extraId!, { attendance: choice === 'absent' ? 'absent' : 'present' }));
+      return;
+    }
+    run(item.key, () => api.mark(timetableId, date, item.slotId!, markFor(choice, item)));
+  };
+
+  const totals = dayTotals(day);
+  const notes = dayNotes(day);
+  const extraDraft = (item: DayClass | null): DraftSlot | null =>
+    item ? { key: item.key, weekday: 1, start: clockToMinutes(item.start), end: clockToMinutes(item.end), periods: item.units, subjectId: item.subjectId } : null;
+
+  return (
+    <Page refreshing={refreshing} onRefresh={refresh}>
+      <Stack.Screen options={{ title: data.timetable.name }} />
+      <View style={styles.nav}>
+        <Pressable role="button" aria-label="Previous day" onPress={() => go(shiftDay(date, -1))} style={styles.navButton}>
+          <Text style={styles.navArrow}>‹</Text>
+        </Pressable>
+        <Text style={styles.navTitle} role="heading">
+          {dayTitle(date, today)}
+        </Text>
+        <Pressable role="button" aria-label="Next day" onPress={() => go(shiftDay(date, 1))} style={styles.navButton}>
+          <Text style={styles.navArrow}>›</Text>
+        </Pressable>
+      </View>
+      {date !== today ? (
+        <Pressable role="button" onPress={() => go(today)} style={styles.todayLink}>
+          <Text style={styles.link}>Go to today</Text>
+        </Pressable>
+      ) : null}
+
+      {stale ? (
+        <Loading />
+      ) : (
+        <>
+          {notes.map((note) => (
+            <Muted key={note}>{note}</Muted>
+          ))}
+          <ErrorNotice message={message} />
+          {day.classes.length === 0 ? (
+            <Muted>{day.kind === 'holiday' || day.kind === 'outside' ? 'No classes.' : 'No classes on this day.'}</Muted>
+          ) : (
+            <View style={styles.list}>
+              {day.classes.map((item) => (
+                <ClassRow
+                  key={item.key}
+                  item={item}
+                  day={day}
+                  byId={byId}
+                  busy={busyKey === item.key}
+                  onChoose={(choice) => choose(item, choice)}
+                  onMore={() => setEditing(item.extraId !== null ? { kind: 'extra', item } : { kind: 'substitute', item })}
+                />
+              ))}
+            </View>
+          )}
+          {totals.held > 0 ? (
+            <Text style={styles.totals}>
+              {totals.attended} of {totals.held} attended so far on this day
+            </Text>
+          ) : null}
+          {day.tracking && day.kind !== 'outside' ? (
+            <View style={styles.add}>
+              <Button title="Add an extra class" variant="secondary" onPress={() => setEditing({ kind: 'extra', item: null })} />
+            </View>
+          ) : null}
+        </>
+      )}
+
+      {editing?.kind === 'substitute' ? (
+        <SubstitutePicker
+          item={editing.item}
+          subjects={data.subjects}
+          onClose={() => setEditing(null)}
+          onPick={(subjectId) => {
+            const item = editing.item;
+            setEditing(null);
+            const choice = choiceOf(item) === 'absent' ? 'absent' : 'present';
+            run(item.key, () => api.mark(timetableId, date, item.slotId!, { attendance: choice, substituteSubjectId: subjectId === item.scheduledSubjectId ? null : subjectId }));
+          }}
+        />
+      ) : null}
+
+      {editing?.kind === 'extra' ? (
+        <ClassEditor
+          title={editing.item ? 'Edit extra class' : 'Add an extra class'}
+          doneLabel={editing.item ? 'Save' : 'Add'}
+          weekday={1}
+          slot={extraDraft(editing.item)}
+          suggestion={null}
+          draft={[]}
+          subjects={data.subjects}
+          onClose={() => setEditing(null)}
+          onDone={(slot) => {
+            const item = editing.item;
+            setEditing(null);
+            const input = { subjectId: slot.subjectId, start: minutesToClock(slot.start), end: minutesToClock(slot.end), periods: slot.periods };
+            if (item) run(item.key, () => api.updateExtra(timetableId, item.extraId!, input));
+            else run('new-extra', () => api.addExtra(timetableId, date, { ...input, attendance: 'present' }));
+          }}
+          onRemove={() => {
+            const item = editing.item!;
+            setEditing(null);
+            run(item.key, () => api.deleteExtra(timetableId, item.extraId!));
+          }}
+        />
+      ) : null}
+    </Page>
+  );
+}
+
+const styles = StyleSheet.create({
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.xs },
+  navButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  navArrow: { fontSize: 28, color: colors.primary },
+  navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.text },
+  todayLink: { alignSelf: 'center', paddingVertical: space.xs, marginBottom: space.sm },
+  link: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+  list: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden', marginTop: space.sm },
+  row: { padding: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, backgroundColor: colors.background },
+  rowBusy: { opacity: 0.5 },
+  rowTop: { flexDirection: 'row', gap: space.md },
+  dot: { paddingTop: 4 },
+  rowText: { flex: 1 },
+  rowTitle: { fontSize: 15, fontWeight: '500', color: colors.text },
+  struck: { textDecorationLine: 'line-through', color: colors.muted },
+  rowDetail: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  rowStatus: { fontSize: 13, color: colors.text, marginTop: 2 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md, flexWrap: 'wrap' },
+  choices: { flexDirection: 'row', gap: space.xs },
+  choice: { borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: space.md, paddingVertical: 7 },
+  choiceText: { fontSize: 14, color: colors.text, fontWeight: '500' },
+  more: { paddingHorizontal: space.sm, paddingVertical: 7, marginLeft: 'auto' },
+  moreText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
+  totals: { fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: space.md },
+  add: { marginTop: space.lg },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: space.lg },
+  sheet: { backgroundColor: colors.background, borderRadius: 10, padding: space.lg, width: '100%', maxWidth: 420, maxHeight: '80%', alignSelf: 'center' },
+  sheetTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  sheetNote: { fontSize: 13, color: colors.muted, marginTop: space.xs, marginBottom: space.sm, lineHeight: 18 },
+  sheetList: { flexGrow: 0 },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  sheetRowText: { fontSize: 15, color: colors.text, flex: 1 },
+  sheetRowCurrent: { fontWeight: '700' },
+  sheetCancel: { alignSelf: 'flex-end', paddingVertical: space.sm, paddingHorizontal: space.md, marginTop: space.sm },
+  sheetCancelText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+});

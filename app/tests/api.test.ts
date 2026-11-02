@@ -180,6 +180,28 @@ describe('the API client', () => {
     expect(calls.map((call) => call.url)).toEqual(['http://x/timetables/7/summary', 'http://x/timetables/7/summary?asOf=2026-09-30']);
   });
 
+  it('marks classes and handles extra classes', async () => {
+    const { fn, calls } = fakeFetch(() => json(200, { day: { date: '2026-11-02' } }));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    expect(await api.day(7, '2026-11-02')).toEqual({ date: '2026-11-02' });
+    await api.mark(7, '2026-11-02', 3, { attendance: 'absent', substituteSubjectId: null });
+    await api.clearMark(7, '2026-11-02', 3);
+    const extra = { subjectId: 9, start: '15:20', end: '16:10', periods: 1, attendance: 'present' as const };
+    await api.addExtra(7, '2026-11-02', extra);
+    await api.updateExtra(7, 4, { attendance: 'absent' });
+    await api.deleteExtra(7, 4);
+    expect(calls.map((call) => `${call.init.method} ${call.url.replace('http://x', '')}`)).toEqual([
+      'GET /timetables/7/days/2026-11-02',
+      'PUT /timetables/7/days/2026-11-02/classes/3',
+      'DELETE /timetables/7/days/2026-11-02/classes/3',
+      'POST /timetables/7/days/2026-11-02/extra',
+      'PATCH /timetables/7/extra/4',
+      'DELETE /timetables/7/extra/4',
+    ]);
+    expect(JSON.parse(calls[1]!.init.body as string)).toEqual({ attendance: 'absent', substituteSubjectId: null });
+    expect(JSON.parse(calls[3]!.init.body as string)).toEqual(extra);
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
