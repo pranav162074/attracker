@@ -59,3 +59,5 @@ export const deviceTimeZone = () => {
     return 'Asia/Kolkata';
   }
 };
+
+export const friendlyDates = (text: string) => text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (iso) => (isRealIso(iso) ? formatDate(iso) : iso));

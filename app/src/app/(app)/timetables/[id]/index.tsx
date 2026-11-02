@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { api } from '../../../../session.tsx';
 import type { SetupStep, Timetable } from '../../../../lib/api.ts';
-import { formatDate } from '../../../../lib/dates.ts';
+import { formatDate, friendlyDates } from '../../../../lib/dates.ts';
 import { problemFrom } from '../../../../lib/forms.ts';
 import { STEP_TITLES } from '../../../../lib/setupForms.ts';
 import { useLoad } from '../../../../useLoad.ts';
@@ -49,6 +49,7 @@ export default function TimetableSetup() {
     dates: () => router.push(`${base}/details`),
     subjects: () => router.push(`${base}/subjects`),
     grid: () => router.push(`${base}/grid`),
+    holidays: () => router.push(`${base}/calendar`),
   };
   const missing = setup.steps.filter((step) => step.required && !step.done);
 
@@ -79,7 +80,7 @@ export default function TimetableSetup() {
           <ListRow
             key={step.key}
             title={`${STEP_TITLES[step.key]}${step.required ? '' : ' (optional)'}`}
-            detail={step.key === 'dates' ? datesDetail(timetable) : step.message}
+            detail={step.key === 'dates' ? datesDetail(timetable) : friendlyDates(step.message)}
             left={<Mark step={step} index={index} />}
             onPress={targets[step.key]}
           />

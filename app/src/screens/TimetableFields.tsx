@@ -29,6 +29,7 @@ export const TimetableFields = ({ form, errors, onChange }: Props) => {
         value={form.endsOn}
         onChange={(value) => set('endsOn', value)}
         error={errors.endsOn}
+        near={form.startsOn}
         optional
         hint="Leave empty if it has no fixed end, like a dance class."
       />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, isRealIso, monthGrid, shiftMonth, toIso } from '../src/lib/dates.ts';
+import { formatDate, friendlyDates, isRealIso, monthGrid, shiftMonth, toIso } from '../src/lib/dates.ts';
 
 describe('the date picker', () => {
   it('lays out a month in weeks starting on Monday', () => {
@@ -39,5 +39,13 @@ describe('the date picker', () => {
     expect(isRealIso('2026-02-29')).toBe(false);
     expect(isRealIso('2028-02-29')).toBe(true);
     expect(isRealIso('2026-7-20')).toBe(false);
+  });
+});
+
+describe('dates inside server messages', () => {
+  it('rewrites ISO dates the way the app shows them', () => {
+    expect(friendlyDates('2026-08-15 is already a holiday (Independence Day)')).toBe('15 Aug 2026 is already a holiday (Independence Day)');
+    expect(friendlyDates('Days must be between 2026-07-20 and 2026-11-14')).toBe('Days must be between 20 Jul 2026 and 14 Nov 2026');
+    expect(friendlyDates('No dates here, and 2026-02-30 is not real')).toBe('No dates here, and 2026-02-30 is not real');
   });
 });

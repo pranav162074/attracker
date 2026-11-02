@@ -148,6 +148,30 @@ describe('the API client', () => {
     expect(JSON.parse(calls[2]!.init.body as string)).toEqual(body);
   });
 
+  it('reads and changes holidays and special days', async () => {
+    const { fn, calls } = fakeFetch(({ init }) =>
+      init.method === 'DELETE' ? new Response(null, { status: 204 }) : json(200, { days: [{ id: 4 }], day: { id: 4 }, holidays: [], skipped: [] })
+    );
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    const holiday = { kind: 'holiday' as const, startsOn: '2026-08-15', endsOn: '2026-08-15', followsWeekday: null, cutoff: null, label: 'Independence Day' };
+    expect(await api.calendar(7)).toEqual([{ id: 4 }]);
+    expect(await api.addDay(7, holiday)).toEqual({ id: 4 });
+    expect(await api.addDays(7, [holiday])).toEqual([{ id: 4 }]);
+    await api.updateDay(7, 4, holiday);
+    await api.deleteDay(7, 4);
+    await api.previewImport(7, '15-08-2026 Independence Day');
+    expect(calls.map((call) => `${call.init.method} ${call.url.replace('http://x', '')}`)).toEqual([
+      'GET /timetables/7/calendar',
+      'POST /timetables/7/calendar',
+      'POST /timetables/7/calendar/bulk',
+      'PATCH /timetables/7/calendar/4',
+      'DELETE /timetables/7/calendar/4',
+      'POST /timetables/7/calendar/import',
+    ]);
+    expect(JSON.parse(calls[2]!.init.body as string)).toEqual({ days: [holiday] });
+    expect(JSON.parse(calls[5]!.init.body as string)).toEqual({ text: '15-08-2026 Independence Day' });
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
