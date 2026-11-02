@@ -113,6 +113,7 @@ describe('the API client', () => {
     await api.startTracking(7);
     expect(await api.subjects(7, true)).toEqual([{ id: 9 }]);
     await api.subjects(7);
+    await api.subjectHistory(7, 9);
     expect(await api.createSubject(7, subject)).toEqual({ id: 9 });
     await api.updateSubject(7, 9, { archived: true });
     await api.deleteSubject(7, 9);
@@ -125,12 +126,13 @@ describe('the API client', () => {
       'POST /timetables/7/start',
       'GET /timetables/7/subjects?archived=true',
       'GET /timetables/7/subjects',
+      'GET /timetables/7/subjects/9/history',
       'POST /timetables/7/subjects',
       'PATCH /timetables/7/subjects/9',
       'DELETE /timetables/7/subjects/9',
       'DELETE /timetables/7',
     ]);
-    expect(JSON.parse(calls[7]!.init.body as string)).toEqual({ archived: true });
+    expect(JSON.parse(calls[8]!.init.body as string)).toEqual({ archived: true });
   });
 
   it('reads and saves the weekly grid', async () => {

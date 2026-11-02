@@ -4,6 +4,7 @@ import { validateBody } from '../middleware/validate.ts';
 import { createSubjectSchema, updateSubjectSchema } from '../subjects/schemas.ts';
 import type { CreateSubject, UpdateSubject } from '../subjects/schemas.ts';
 import { createSubject, deleteSubject, listSubjects, updateSubject } from '../subjects/repo.ts';
+import { subjectHistory } from '../attendance/history.ts';
 
 export const subjectRoutes = express.Router({ mergeParams: true });
 
@@ -17,6 +18,10 @@ subjectRoutes.get('/', async (req, res) => {
 subjectRoutes.post('/', validateBody(createSubjectSchema), async (req, res) => {
   const subject = await createSubject(req.auth!.userId, timetableId(req.params), req.body as CreateSubject);
   res.status(201).json({ subject });
+});
+
+subjectRoutes.get('/:subjectId/history', async (req, res) => {
+  res.json(await subjectHistory(req.auth!.userId, timetableId(req.params), idParam(req.params.subjectId, 'Subject')));
 });
 
 subjectRoutes.patch('/:subjectId', validateBody(updateSubjectSchema), async (req, res) => {
