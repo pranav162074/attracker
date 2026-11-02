@@ -3,9 +3,9 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { TextInputInstance, TextInputProps } from 'react-native';
 import { colors, space } from './theme.ts';
 
-type Props = TextInputProps & { label: string; error?: string | undefined; ref?: Ref<TextInputInstance> };
+type Props = TextInputProps & { label: string; error?: string | undefined; hint?: string | null; ref?: Ref<TextInputInstance> };
 
-export const TextField = ({ label, error, style, ref, ...input }: Props) => (
+export const TextField = ({ label, error, hint, style, ref, ...input }: Props) => (
   <View style={styles.wrap}>
     <Text style={styles.label}>{label}</Text>
     <TextInput
@@ -16,7 +16,7 @@ export const TextField = ({ label, error, style, ref, ...input }: Props) => (
       aria-invalid={error ? true : undefined}
       {...input}
     />
-    {error ? <Text style={styles.error}>{error}</Text> : null}
+    {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
   </View>
 );
 
@@ -35,4 +35,5 @@ const styles = StyleSheet.create({
   },
   inputError: { borderColor: colors.error },
   error: { color: colors.error, fontSize: 13, marginTop: space.xs },
+  hint: { color: colors.muted, fontSize: 13, marginTop: space.xs },
 });

@@ -109,6 +109,24 @@ export type SetupStep = {
 
 export type Setup = { status: 'setup' | 'tracking'; ready: boolean; steps: SetupStep[] };
 
+export type GridSlot = { id: number; weekday: number; start: string; end: string; periods: number; subjectId: number };
+
+export type GridVersion = { id: number; effectiveFrom: string; effectiveUntil: string | null; slotCount: number };
+
+export type Grid = { on: string; version: GridVersion | null; slots: GridSlot[] };
+
+export type GridInput = {
+  effectiveFrom: string;
+  slots: Array<{ weekday: number; start: string; end: string; periods: number; subjectId: number }>;
+  discardMarks?: boolean;
+};
+
+export type GridSaved = {
+  version: GridVersion;
+  slots: GridSlot[];
+  summary: { created: boolean; kept: number; changed: number; added: number; removed: number; discardedMarks: number };
+};
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -235,6 +253,8 @@ export const createApi = (options: ApiOptions) => {
       request<{ subject: Subject }>('POST', `/timetables/${id}/subjects`, input).then((result) => result.subject),
     updateSubject: (id: number, subjectId: number, changes: Partial<SubjectInput> & { archived?: boolean }) =>
       request<{ subject: Subject }>('PATCH', `/timetables/${id}/subjects/${subjectId}`, changes).then((result) => result.subject),
+    grid: (id: number, on?: string) => request<Grid>('GET', `/timetables/${id}/grid${on ? `?on=${on}` : ''}`),
+    saveGrid: (id: number, input: GridInput) => request<GridSaved>('PUT', `/timetables/${id}/grid`, input),
     deleteSubject: (id: number, subjectId: number) => request<void>('DELETE', `/timetables/${id}/subjects/${subjectId}`),
   };
 };
