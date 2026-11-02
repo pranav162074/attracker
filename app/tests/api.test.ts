@@ -133,6 +133,21 @@ describe('the API client', () => {
     expect(JSON.parse(calls[7]!.init.body as string)).toEqual({ archived: true });
   });
 
+  it('reads and saves the weekly grid', async () => {
+    const { fn, calls } = fakeFetch(() => json(200, { on: '2026-07-20', version: null, slots: [] }));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    await api.grid(7);
+    await api.grid(7, '2026-07-20');
+    const body = { effectiveFrom: '2026-07-20', slots: [{ weekday: 1, start: '08:40', end: '09:30', periods: 1, subjectId: 9 }], discardMarks: false };
+    await api.saveGrid(7, body);
+    expect(calls.map((call) => `${call.init.method} ${call.url.replace('http://x', '')}`)).toEqual([
+      'GET /timetables/7/grid',
+      'GET /timetables/7/grid?on=2026-07-20',
+      'PUT /timetables/7/grid',
+    ]);
+    expect(JSON.parse(calls[2]!.init.body as string)).toEqual(body);
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });

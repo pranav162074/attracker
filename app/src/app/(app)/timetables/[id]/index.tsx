@@ -48,6 +48,7 @@ export default function TimetableSetup() {
   const targets: Partial<Record<SetupStep['key'], () => void>> = {
     dates: () => router.push(`${base}/details`),
     subjects: () => router.push(`${base}/subjects`),
+    grid: () => router.push(`${base}/grid`),
   };
   const missing = setup.steps.filter((step) => step.required && !step.done);
 
