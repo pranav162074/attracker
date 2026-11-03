@@ -236,6 +236,29 @@ export type HistoryEvent = {
 
 export type SubjectHistory = { checkpoint: { asOf: string } | null; events: HistoryEvent[] };
 
+export type CheckpointSubject = { subjectId: number; held: number; attended: number };
+
+export type Checkpoint = {
+  id: number;
+  asOf: string;
+  source: 'manual' | 'sheet';
+  freeHeld: number;
+  freeAttended: number;
+  createdAt: string;
+  subjects: CheckpointSubject[];
+};
+
+export type CheckpointInput = { asOf: string; source: 'manual' | 'sheet'; freeHeld: number; freeAttended: number; subjects: CheckpointSubject[] };
+
+export type SheetPreview = {
+  registration: string;
+  subjects: Array<{ code: string | null; name: string; held: number; attended: number; subjectId: number | null }>;
+  totals: { held: number | null; attended: number | null };
+  freeHeld: number;
+  freeAttended: number;
+  unmatchedSubjects: Array<{ id: number; name: string }>;
+};
+
 export type FieldErrors = Record<string, string>;
 
 export class ApiError extends Error {
@@ -302,9 +325,10 @@ export const createApi = (options: ApiOptions) => {
   const timeoutMs = options.timeoutMs ?? 20_000;
   const client = options.mode === 'token' ? 'app' : 'web';
 
-  const request = async <T>(method: Method, path: string, body?: unknown): Promise<T> => {
+  const request = async <T>(method: Method, path: string, body?: unknown, file?: Blob | ArrayBuffer): Promise<T> => {
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (file !== undefined) headers['Content-Type'] = 'application/octet-stream';
+    else if (body !== undefined) headers['Content-Type'] = 'application/json';
     const token = options.mode === 'token' ? options.getToken?.() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -315,7 +339,7 @@ export const createApi = (options: ApiOptions) => {
       res = await doFetch(`${baseUrl}${path}`, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: file !== undefined ? file : body === undefined ? undefined : JSON.stringify(body),
         credentials: options.mode === 'cookie' ? 'include' : 'omit',
         signal: controller.signal,
       });
@@ -382,6 +406,12 @@ export const createApi = (options: ApiOptions) => {
     deleteDay: (id: number, dayId: number) => request<void>('DELETE', `/timetables/${id}/calendar/${dayId}`),
     previewImport: (id: number, text: string) => request<ImportPreview>('POST', `/timetables/${id}/calendar/import`, { text }),
     subjectHistory: (id: number, subjectId: number) => request<SubjectHistory>('GET', `/timetables/${id}/subjects/${subjectId}/history`),
+    checkpoints: (id: number) => request<{ checkpoints: Checkpoint[] }>('GET', `/timetables/${id}/checkpoints`).then((result) => result.checkpoints),
+    saveCheckpoint: (id: number, input: CheckpointInput) =>
+      request<{ checkpoint: Checkpoint }>('POST', `/timetables/${id}/checkpoints`, input).then((result) => result.checkpoint),
+    deleteCheckpoint: (id: number, checkpointId: number) => request<void>('DELETE', `/timetables/${id}/checkpoints/${checkpointId}`),
+    readSheet: (id: number, registration: string, file: Blob | ArrayBuffer) =>
+      request<{ preview: SheetPreview }>('POST', `/timetables/${id}/checkpoints/sheet?registration=${encodeURIComponent(registration)}`, undefined, file).then((result) => result.preview),
     deleteSubject: (id: number, subjectId: number) => request<void>('DELETE', `/timetables/${id}/subjects/${subjectId}`),
   };
 };
