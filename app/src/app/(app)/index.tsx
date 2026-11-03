@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,6 +6,7 @@ import { api } from '../../session.tsx';
 import type { OverviewItem, TodayClass } from '../../lib/api.ts';
 import { classTitle, formatClock, formatDay, localDate, overviewLine, requiredMessage, statusText, statusTone, zoneBadge } from '../../lib/format.ts';
 import { useLoad } from '../../useLoad.ts';
+import { syncRemindersSoon } from '../../reminderSync.ts';
 import { OfflineNotice } from '../../ui/OfflineNotice.tsx';
 import { Badge } from '../../ui/Badge.tsx';
 import { Button } from '../../ui/Button.tsx';
@@ -49,6 +51,9 @@ const TimetableCard = ({ item, onPress }: { item: OverviewItem; onPress: () => v
 export default function Home() {
   const router = useRouter();
   const { data, error, loading, refreshing, refresh, savedAt } = useLoad(loadHome, 'home');
+  useEffect(() => {
+    if (data && !savedAt) syncRemindersSoon();
+  }, [data, savedAt]);
   const todayDate = data?.today[0]?.date ?? localDate();
   const timetableCount = new Set(data?.today.map((item) => item.timetableId)).size;
 

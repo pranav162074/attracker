@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, useSession } from '../../session.tsx';
 import { problemFrom } from '../../lib/forms.ts';
 import { Button } from '../../ui/Button.tsx';
+import { stopReminders } from '../../reminderSync.ts';
+import { ReminderSettings } from '../../screens/ReminderSettings.tsx';
 import { ErrorNotice } from '../../ui/Notice.tsx';
 import { colors, space } from '../../ui/theme.ts';
 
@@ -15,6 +17,7 @@ export default function Account() {
 
   const here = async () => {
     setBusy('here');
+    await stopReminders();
     await logOut();
   };
 
@@ -23,6 +26,7 @@ export default function Account() {
     setMessage(null);
     try {
       await api.logoutAll();
+      await stopReminders();
       await logOut();
     } catch (error) {
       setMessage(problemFrom(error).message);
@@ -32,7 +36,7 @@ export default function Account() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
-      <View style={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Text style={styles.label}>Logged in as</Text>
         <Text style={styles.email}>{email}</Text>
         <ErrorNotice message={message} />
@@ -41,7 +45,8 @@ export default function Account() {
           <Button title="Log out on all devices" variant="secondary" onPress={everywhere} busy={busy === 'everywhere'} disabled={busy !== null} />
         </View>
         <Text style={styles.note}>Logging out on all devices also logs out this phone or browser.</Text>
-      </View>
+        <ReminderSettings />
+      </ScrollView>
     </SafeAreaView>
   );
 }
