@@ -61,6 +61,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | POST | `/auth/signup` | Create an account and log in (`{ email, password, client }`) |
 | POST | `/auth/login` | Log in |
 | POST | `/auth/google` | Continue with Google (`{ idToken, client }`) |
+| POST | `/auth/password/forgot` | Email a 6-digit reset code (`{ email }`) |
+| POST | `/auth/password/reset` | Set a new password with the code and log in (`{ email, code, password, client }`) |
 | GET | `/auth/me` | The logged-in user, with their sign-in methods |
 | POST | `/auth/logout` | Log out this device |
 | POST | `/auth/logout-all` | Log out every device |
@@ -100,6 +102,8 @@ Passwords are hashed with scrypt (N = 32768), and the parameters are stored with
 
 Continue with Google takes the ID token the website or app gets from Google. The API checks it with Google's own library: signature against Google's published keys, issuer, expiry, that it was issued for one of `GOOGLE_CLIENT_IDS`, and that the email is verified. The first sign-in creates an account without a password; if an account with that email already exists, Google is linked to it, so both ways of signing in reach the same account.
 
+Forgot password emails a 6-digit code that works for 15 minutes. The answer is the same whether or not the email has an account, and the email is sent after the answer goes out, so timing gives nothing away either. Only a hash of the code is stored, a newer code replaces the older one, and five wrong tries use it up. Setting the new password logs out every device and logs this one in. Someone who signed up with Google can use it to add a password. Codes are limited to 3 an hour per email and 10 an hour per address. Email goes out through Brevo or Resend (`EMAIL_TRANSPORT`); in development the code is printed in the API log instead, and a production server with no email service answers 503.
+
 A timetable begins in setup. The student enters the semester dates, the subjects, the weekly timetable and their college's holidays, then presses Start Tracking. Tracking needs at least one subject that counts for attendance and a weekly timetable covering the first day of the semester; holidays are optional because not every timetable has them. Attendance then counts from the semester's start date with every class present by default, and everything stays editable afterwards.
 
 Marking needs tracking to have started; a day can be looked at during setup as a preview. Present is the default and is never stored: marking a class present again removes its mark. A mark is refused for a class that does not happen on that day, and every change answers with the updated day, worked out by the same engine the app uses. Day-wide changes (a sudden holiday, a half day, a Saturday following Monday) are calendar entries.
@@ -127,6 +131,9 @@ Requests that change something with a cookie must come from an allowed origin (`
 | `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to call the API from a browser (CORS) and to make cookie-authenticated changes |
 | `SESSION_DAYS` | 60 | How long an unused session lasts |
 | `GOOGLE_CLIENT_IDS` | (empty: Google sign-in off) | Comma-separated OAuth client IDs (web, Android) whose tokens are accepted |
+| `EMAIL_TRANSPORT` | `log` | `brevo` or `resend` to send reset codes; `log` prints them in development and turns reset off in production |
+| `EMAIL_API_KEY` | (none) | The Brevo or Resend API key; keep it in `.env` or the host's settings, never in the repo |
+| `EMAIL_FROM`, `EMAIL_FROM_NAME` | (none), attracker | The sender address verified with the email service, and the name shown |
 
 ## The attendance engine
 
@@ -152,6 +159,7 @@ Only rules and exceptions are stored; each individual class is worked out from t
 |---|---|
 | `users`, `sessions` | accounts and logged-in devices |
 | `user_identities` | linked Google accounts |
+| `password_resets` | the latest reset code per account, hashed, with its expiry and wrong tries |
 | `rate_limit_windows` | sign-up and login attempt counters |
 | `timetables` | name, dates, time zone, required and condonation lines |
 | `subjects` | name, theory or lab, whether it counts, per period or per session |

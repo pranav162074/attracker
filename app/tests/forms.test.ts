@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ApiError, NetworkError } from '../src/lib/api.ts';
-import { checkEmail, checkLogin, checkNewPassword, checkSignup, normaliseEmail, problemFrom } from '../src/lib/forms.ts';
+import { checkEmail, checkLogin, checkNewPassword, checkReset, checkSignup, normaliseCode, normaliseEmail, problemFrom } from '../src/lib/forms.ts';
 
 describe('form checks', () => {
   it('checks emails the same way the server does', () => {
@@ -51,5 +51,25 @@ describe('showing what went wrong', () => {
     expect(problemFrom(new ApiError(401, 'invalid_credentials', 'Email or password is incorrect')).message).toBe('Email or password is incorrect');
     expect(problemFrom(new NetworkError()).message).toMatch(/Check your internet connection/);
     expect(problemFrom(new Error('boom')).message).toBe('Something went wrong. Try again.');
+  });
+});
+
+describe('resetting a password', () => {
+  it('checks the code and the new password', () => {
+    expect(checkReset({ code: '123 456', password: 'a long password', confirm: 'a long password' })).toEqual({});
+    expect(checkReset({ code: '', password: 'short', confirm: 'other' })).toEqual({
+      code: 'Enter the code from the email',
+      password: 'Password must be at least 8 characters',
+      confirm: 'Passwords do not match',
+    });
+    expect(checkReset({ code: '12345', password: 'a long password', confirm: 'a long password' }).code).toBe('The code is the 6 digits from the email');
+    expect(normaliseCode(' 123 456 ')).toBe('123456');
+  });
+
+  it('puts a wrong code next to the code field', () => {
+    expect(problemFrom(new ApiError(400, 'invalid_code', 'That code is not right. 4 tries left.'))).toEqual({
+      fields: { code: 'That code is not right. 4 tries left.' },
+      message: null,
+    });
   });
 });

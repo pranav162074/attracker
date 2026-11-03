@@ -29,6 +29,7 @@ type SessionValue = {
   state: SessionState;
   logIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
   retry: () => void;
 };
@@ -77,6 +78,7 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
     state,
     logIn: async (email, password) => setState(await signedIn(await acceptAuth(await api.login(email, password), tokenStore, holder))),
     signUp: async (email, password) => setState(await signedIn(await acceptAuth(await api.signup(email, password), tokenStore, holder))),
+    resetPassword: async (email, code, password) => setState(await signedIn(await acceptAuth(await api.resetPassword(email, code, password), tokenStore, holder))),
     logOut: async () => {
       const next = await endSession(api, tokenStore, holder);
       await forgetEverything(storage);

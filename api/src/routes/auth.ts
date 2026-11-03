@@ -5,8 +5,10 @@ import { hashPassword, verifyPassword } from '../auth/password.ts';
 import { createSession, deleteSession, deleteUserSessions } from '../auth/sessions.ts';
 import { googleSignInEnabled, GoogleTokenError, verifyGoogleIdToken } from '../auth/google.ts';
 import { GoogleAccountMismatchError, signInMethodsFor, signInWithGoogle } from '../auth/identities.ts';
+import { requestReset, resetPassword } from '../auth/passwordResets.ts';
 import { createUser, EmailTakenError, findUserByEmail, publicUser } from '../auth/users.ts';
 import type { UserRow } from '../auth/users.ts';
+import { emailEnabled } from '../email/send.ts';
 import { SESSION_COOKIE, sessionCookieOptions } from '../http/cookies.ts';
 import { requireAuth } from '../middleware/auth.ts';
 import { rateLimit } from '../middleware/rateLimit.ts';
@@ -18,6 +20,9 @@ export const LIMITS = {
   loginPerIp: { bucket: 'login:ip', limit: 30, windowSeconds: 900 },
   loginPerEmail: { bucket: 'login:email', limit: 10, windowSeconds: 900 },
   googlePerIp: { bucket: 'google:ip', limit: 30, windowSeconds: 900 },
+  forgotPerIp: { bucket: 'forgot:ip', limit: 10, windowSeconds: 3600 },
+  forgotPerEmail: { bucket: 'forgot:email', limit: 3, windowSeconds: 3600 },
+  resetPerIp: { bucket: 'reset:ip', limit: 20, windowSeconds: 900 },
 } satisfies Record<string, Limit>;
 
 const email = z
@@ -29,13 +34,20 @@ const email = z
 
 const client = z.enum(['web', 'app']).default('web');
 
-const signupSchema = z.strictObject({
+const newPassword = z
+  .string({ error: 'Enter a password' })
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must be at most 128 characters')
+  .refine((value) => value.trim().length > 0, 'Password cannot be only spaces');
+
+const signupSchema = z.strictObject({ email, password: newPassword, client });
+
+const forgotSchema = z.strictObject({ email });
+
+const resetSchema = z.strictObject({
   email,
-  password: z
-    .string({ error: 'Enter a password' })
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password must be at most 128 characters')
-    .refine((value) => value.trim().length > 0, 'Password cannot be only spaces'),
+  code: z.string({ error: 'Enter the code from the email' }).trim().regex(/^\d{6}$/, 'The code is the 6 digits from the email'),
+  password: newPassword,
   client,
 });
 
@@ -124,6 +136,37 @@ authRoutes.post('/google', rateLimit(LIMITS.googlePerIp, ipOf), validateBody(goo
     }
     throw error;
   }
+});
+
+const emailOff = (res: Response) => {
+  res.status(503).json({ error: 'email_disabled', message: 'Password reset by email is not set up on this server' });
+};
+
+authRoutes.post(
+  '/password/forgot',
+  rateLimit(LIMITS.forgotPerIp, ipOf),
+  rateLimit(LIMITS.forgotPerEmail, emailOf),
+  validateBody(forgotSchema),
+  (req, res) => {
+    if (!emailEnabled()) return emailOff(res);
+    requestReset((req.body as z.infer<typeof forgotSchema>).email);
+    res.status(202).json({ message: 'If an account uses this email, a code is on its way.' });
+  }
+);
+
+authRoutes.post('/password/reset', rateLimit(LIMITS.resetPerIp, ipOf), validateBody(resetSchema), async (req, res) => {
+  if (!emailEnabled()) return emailOff(res);
+  const body = req.body as z.infer<typeof resetSchema>;
+  const result = await resetPassword(body.email, body.code, await hashPassword(body.password));
+  if (!result.ok) {
+    const message =
+      result.attemptsLeft > 0
+        ? `That code is not right. ${result.attemptsLeft === 1 ? '1 try' : `${result.attemptsLeft} tries`} left.`
+        : 'That code has expired or been used up. Ask for a new one.';
+    res.status(400).json({ error: 'invalid_code', message, attemptsLeft: result.attemptsLeft });
+    return;
+  }
+  await startSession(req, res, result.user, body.client, 200);
 });
 
 authRoutes.get('/me', requireAuth, async (req, res) => {
