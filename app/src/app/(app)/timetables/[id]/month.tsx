@@ -8,6 +8,7 @@ import { localDate } from '../../../../lib/format.ts';
 import { cellLook, cellNote, gridRange, monthParam, monthTitle, monthTotals, neighbour, parseMonthParam } from '../../../../lib/month.ts';
 import type { CellLook } from '../../../../lib/month.ts';
 import { useLoad } from '../../../../useLoad.ts';
+import { OfflineNotice } from '../../../../ui/OfflineNotice.tsx';
 import { LoadFailed, Loading, Muted, Page } from '../../../../ui/Page.tsx';
 import { colors, space, tones } from '../../../../ui/theme.ts';
 
@@ -52,7 +53,7 @@ export default function MonthScreen() {
   const today = localDate();
   const keyText = monthParam(parseMonthParam(params.m, today));
   const load = useCallback(() => loadMonth(timetableId, keyText), [timetableId, keyText]);
-  const { data, error, loading, refreshing, refresh } = useLoad(load);
+  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `month.${timetableId}.${keyText}`);
   const key = parseMonthParam(keyText, keyText);
 
   if (loading) return <Loading />;
@@ -68,6 +69,7 @@ export default function MonthScreen() {
   return (
     <Page refreshing={refreshing} onRefresh={refresh}>
       <Stack.Screen options={{ title: timetable.name }} />
+      <OfflineNotice savedAt={savedAt} />
       <View style={styles.bar}>
         <Pressable role="button" aria-label="Previous month" onPress={() => go(-1)} style={styles.arrow}>
           <Text style={styles.arrowText}>‹</Text>

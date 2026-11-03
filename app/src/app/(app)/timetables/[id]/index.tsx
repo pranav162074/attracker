@@ -9,6 +9,7 @@ import { problemFrom } from '../../../../lib/forms.ts';
 import { STEP_TITLES } from '../../../../lib/setupForms.ts';
 import { Dashboard } from '../../../../screens/Dashboard.tsx';
 import { useLoad } from '../../../../useLoad.ts';
+import { OfflineNotice } from '../../../../ui/OfflineNotice.tsx';
 import { Button } from '../../../../ui/Button.tsx';
 import { ListBox, ListRow } from '../../../../ui/Controls.tsx';
 import { ErrorNotice } from '../../../../ui/Notice.tsx';
@@ -39,7 +40,7 @@ export default function TimetableScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const timetableId = Number(id);
   const load = useCallback(() => loadAll(timetableId), [timetableId]);
-  const { data, error, loading, refreshing, refresh } = useLoad(load);
+  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `timetable.${timetableId}`);
   const [starting, setStarting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -73,6 +74,7 @@ export default function TimetableScreen() {
   return (
     <Page refreshing={refreshing} onRefresh={refresh}>
       <Stack.Screen options={{ title: timetable.name }} />
+      <OfflineNotice savedAt={savedAt} />
       <ErrorNotice message={message ?? error} />
       {summary ? (
         <>

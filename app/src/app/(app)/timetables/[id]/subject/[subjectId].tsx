@@ -10,6 +10,7 @@ import { lineMessage, localDate } from '../../../../../lib/format.ts';
 import { KIND_LABELS } from '../../../../../lib/setupForms.ts';
 import { eventText, eventTone, eventWhen, missedTotal, splitHistory, subjectOutlook, weeklyLoad, weeklySlots } from '../../../../../lib/subject.ts';
 import { useLoad } from '../../../../../useLoad.ts';
+import { OfflineNotice } from '../../../../../ui/OfflineNotice.tsx';
 import { Button } from '../../../../../ui/Button.tsx';
 import { Dot } from '../../../../../ui/Controls.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
@@ -46,7 +47,7 @@ export default function SubjectPage() {
   const timetableId = Number(params.id);
   const subjectId = Number(params.subjectId);
   const load = useCallback(() => loadSubject(timetableId, subjectId), [timetableId, subjectId]);
-  const { data, error, loading, refreshing, refresh } = useLoad(load);
+  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `subject.${timetableId}.${subjectId}`);
 
   if (loading) return <Loading />;
   if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
@@ -64,6 +65,7 @@ export default function SubjectPage() {
   return (
     <Page refreshing={refreshing} onRefresh={refresh}>
       <Stack.Screen options={{ title: subject.shortName ?? subject.name }} />
+      <OfflineNotice savedAt={savedAt} />
       <View style={styles.card}>
         <View style={styles.cardTop}>
           <Dot colour={subject.colour} />

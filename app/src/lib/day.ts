@@ -63,3 +63,31 @@ export const markFor = (choice: Choice, item: Pick<DayClass, 'subjectId' | 'sche
   attendance: choice,
   substituteSubjectId: choice === 'cancelled' || item.subjectId === item.scheduledSubjectId ? null : item.subjectId,
 });
+
+const pad = (value: number) => String(value).padStart(2, '0');
+
+export const hasStarted = (date: string, start: string, now: Date) => {
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  if (date !== today) return date < today;
+  return start <= `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+};
+
+export const applyMark = (item: DayClass, mark: { attendance: Choice; substituteSubjectId: number | null }, started: boolean): DayClass => {
+  if (item.cancelledBy === 'half_day') return item;
+  if (mark.attendance === 'cancelled') return { ...item, subjectId: item.scheduledSubjectId, status: 'cancelled', plannedAbsent: false, cancelledBy: 'mark' };
+  const subjectId = mark.substituteSubjectId ?? item.scheduledSubjectId;
+  if (!started) return { ...item, subjectId, status: 'upcoming', plannedAbsent: mark.attendance === 'absent', cancelledBy: null };
+  return { ...item, subjectId, status: mark.attendance === 'absent' ? 'absent' : 'attended', plannedAbsent: false, cancelledBy: null };
+};
+
+export const applyPending = (day: Day, pending: Array<{ slotId: number; mark: { attendance: Choice; substituteSubjectId: number | null } }>, now: Date): Day => {
+  if (pending.length === 0) return day;
+  const bySlot = new Map(pending.map((item) => [item.slotId, item.mark]));
+  return {
+    ...day,
+    classes: day.classes.map((item) => {
+      const mark = item.slotId === null ? undefined : bySlot.get(item.slotId);
+      return mark ? applyMark(item, mark, hasStarted(day.date, item.start, now)) : item;
+    }),
+  };
+};

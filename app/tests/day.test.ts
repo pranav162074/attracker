@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Day, DayClass } from '../src/lib/api.ts';
-import { canMark, choiceOf, dayNotes, dayTitle, dayTotals, markFor, shiftDay, statusLine } from '../src/lib/day.ts';
+import { applyMark, applyPending, canMark, choiceOf, dayNotes, dayTitle, dayTotals, hasStarted, markFor, shiftDay, statusLine } from '../src/lib/day.ts';
 
 const cls = (values: Partial<DayClass>): DayClass => ({
   key: 's1@2026-11-02',
@@ -92,5 +92,39 @@ describe('the day', () => {
       cls({ key: 'e', units: 1, status: 'upcoming' }),
     ];
     expect(dayTotals({ classes })).toEqual({ held: 4, attended: 3 });
+  });
+});
+
+describe('showing a mark before the server has it', () => {
+  const absent = { attendance: 'absent' as const, substituteSubjectId: null };
+
+  it('knows whether a class has started on this device’s clock', () => {
+    const now = new Date(2026, 10, 3, 9, 30);
+    expect(hasStarted('2026-11-02', '15:20', now)).toBe(true);
+    expect(hasStarted('2026-11-04', '08:40', now)).toBe(false);
+    expect(hasStarted('2026-11-03', '08:40', now)).toBe(true);
+    expect(hasStarted('2026-11-03', '09:30', now)).toBe(true);
+    expect(hasStarted('2026-11-03', '12:00', now)).toBe(false);
+  });
+
+  it('applies absent, cancelled, present and a swapped subject', () => {
+    expect(applyMark(cls({}), absent, true)).toMatchObject({ status: 'absent', plannedAbsent: false });
+    expect(applyMark(cls({ status: 'upcoming' }), absent, false)).toMatchObject({ status: 'upcoming', plannedAbsent: true });
+    expect(applyMark(cls({ subjectId: 9 }), { attendance: 'cancelled', substituteSubjectId: null }, true)).toMatchObject({ status: 'cancelled', cancelledBy: 'mark', subjectId: 5 });
+    expect(applyMark(cls({ status: 'cancelled', cancelledBy: 'mark' }), { attendance: 'present', substituteSubjectId: null }, true)).toMatchObject({ status: 'attended', cancelledBy: null });
+    expect(applyMark(cls({}), { attendance: 'present', substituteSubjectId: 9 }, true)).toMatchObject({ status: 'attended', subjectId: 9 });
+    const halfDay = cls({ status: 'cancelled', cancelledBy: 'half_day' });
+    expect(applyMark(halfDay, absent, true)).toBe(halfDay);
+  });
+
+  it('puts queued marks onto the right classes of a day', () => {
+    const shown = day({ date: '2026-11-03', classes: [cls({ key: 'a', slotId: 1, start: '08:40' }), cls({ key: 'b', slotId: 2, start: '12:00', status: 'upcoming' }), cls({ key: 'x', slotId: null, extraId: 3 })] });
+    const result = applyPending(shown, [{ slotId: 1, mark: absent }, { slotId: 2, mark: absent }], new Date(2026, 10, 3, 10, 0));
+    expect(result.classes.map((item) => [item.key, item.status, item.plannedAbsent])).toEqual([
+      ['a', 'absent', false],
+      ['b', 'upcoming', true],
+      ['x', 'attended', false],
+    ]);
+    expect(applyPending(shown, [], new Date())).toBe(shown);
   });
 });
