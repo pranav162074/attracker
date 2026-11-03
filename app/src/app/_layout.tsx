@@ -24,6 +24,7 @@ const RootNavigator = () => {
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
+        <Stack.Screen name="forgot" />
       </Stack.Protected>
     </Stack>
   );

@@ -43,11 +43,25 @@ export const checkSignup = (form: SignupForm) =>
     ['confirm', form.confirm === form.password ? null : 'Passwords do not match'],
   ]);
 
+export type ResetForm = { code: string; password: string; confirm: string };
+
+export const normaliseCode = (value: string) => value.replace(/\s+/g, '');
+
+export const checkReset = (form: ResetForm) => {
+  const code = normaliseCode(form.code);
+  return collect([
+    ['code', !code ? 'Enter the code from the email' : /^\d{6}$/.test(code) ? null : 'The code is the 6 digits from the email'],
+    ['password', checkNewPassword(form.password)],
+    ['confirm', form.confirm === form.password ? null : 'Passwords do not match'],
+  ]);
+};
+
 export type FormProblem = { fields: FieldErrors; message: string | null };
 
 export const problemFrom = (error: unknown): FormProblem => {
   if (error instanceof ApiError) {
     if (error.code === 'email_taken') return { fields: { email: 'An account with this email already exists. Log in instead.' }, message: null };
+    if (error.code === 'invalid_code') return { fields: { code: error.message }, message: null };
     if (Object.keys(error.fields).length > 0) return { fields: error.fields, message: null };
     if (error.status === 429) return { fields: {}, message: 'Too many attempts. Wait a few minutes and try again.' };
     return { fields: {}, message: error.message };

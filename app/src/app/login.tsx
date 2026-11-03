@@ -69,6 +69,9 @@ export default function Login() {
         onSubmitEditing={submit}
       />
       <Button title="Log in" onPress={submit} busy={busy} />
+      <Link href={{ pathname: '/forgot', params: email.trim() ? { email: normaliseEmail(email) } : {} }} style={[styles.link, styles.forgot]}>
+        Forgot password?
+      </Link>
       <View style={styles.footer}>
         <Text style={styles.footerText}>New to attracker? </Text>
         <Link href="/signup" replace style={styles.link}>
@@ -83,4 +86,5 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: space.xl },
   footerText: { color: colors.muted, fontSize: 15 },
   link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  forgot: { alignSelf: 'center', marginTop: space.lg },
 });

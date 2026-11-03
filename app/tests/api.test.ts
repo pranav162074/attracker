@@ -50,6 +50,27 @@ describe('the API client', () => {
     expect((calls[0]!.init.headers as Record<string, string>).Authorization).toBeUndefined();
   });
 
+  it('asks for a reset code and resets the password like a login', async () => {
+    const { fn, calls } = fakeFetch(({ url }) =>
+      url.endsWith('/forgot') ? json(202, { message: 'If an account uses this email, a code is on its way.' }) : json(200, { user: USER, token: 'at_new', expiresAt: '2027-01-01T00:00:00.000Z' })
+    );
+    const api = createApi({ baseUrl: 'http://192.168.1.5:4000', mode: 'token', fetch: fn });
+    await api.forgotPassword('asha@example.com');
+    expect(calls[0]!.url).toBe('http://192.168.1.5:4000/auth/password/forgot');
+    expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ email: 'asha@example.com' });
+    const result = await api.resetPassword('asha@example.com', '123456', 'a new password');
+    expect(result.token).toBe('at_new');
+    expect(JSON.parse(calls[1]!.init.body as string)).toEqual({ email: 'asha@example.com', code: '123456', password: 'a new password', client: 'app' });
+  });
+
+  it('does not treat a wrong reset code as a lost session', async () => {
+    const { fn } = fakeFetch(() => json(401, { error: 'invalid_code', message: 'nope' }));
+    let lost = 0;
+    const api = createApi({ baseUrl: '', mode: 'token', fetch: fn, onUnauthorized: () => (lost += 1) });
+    await expect(api.resetPassword('asha@example.com', '123456', 'a new password')).rejects.toMatchObject({ code: 'invalid_code' });
+    expect(lost).toBe(0);
+  });
+
   it('turns validation errors into messages per field', async () => {
     const { fn } = fakeFetch(() =>
       json(400, {

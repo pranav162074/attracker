@@ -3,6 +3,7 @@ import { env } from './config/env.ts';
 import { logger } from './config/logger.ts';
 import { app } from './app.ts';
 import { closePool } from './db/pool.ts';
+import { deleteOldResets } from './auth/passwordResets.ts';
 import { deleteExpiredSessions } from './auth/sessions.ts';
 import { deleteOldWindows } from './middleware/rateLimit.ts';
 
@@ -18,7 +19,8 @@ const housekeeping = async () => {
   try {
     const sessions = await deleteExpiredSessions();
     const windows = await deleteOldWindows();
-    if (sessions + windows > 0) logger.info({ sessions, windows }, 'Removed expired sessions and rate limit windows');
+    const resets = await deleteOldResets();
+    if (sessions + windows + resets > 0) logger.info({ sessions, windows, resets }, 'Removed expired sessions, rate limit windows and reset codes');
   } catch (error) {
     logger.warn({ err: error }, 'Housekeeping failed');
   }

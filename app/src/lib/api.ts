@@ -317,7 +317,7 @@ const readBody = async (res: Response): Promise<unknown> => {
   }
 };
 
-const AUTH_PATHS = new Set(['/auth/login', '/auth/signup', '/auth/google']);
+const AUTH_PATHS = new Set(['/auth/login', '/auth/signup', '/auth/google', '/auth/password/forgot', '/auth/password/reset']);
 
 export const createApi = (options: ApiOptions) => {
   const baseUrl = options.baseUrl.replace(/\/+$/, '');
@@ -368,6 +368,8 @@ export const createApi = (options: ApiOptions) => {
     request,
     signup: (email: string, password: string) => request<AuthResult>('POST', '/auth/signup', { email, password, client }),
     login: (email: string, password: string) => request<AuthResult>('POST', '/auth/login', { email, password, client }),
+    forgotPassword: (email: string) => request<{ message: string }>('POST', '/auth/password/forgot', { email }),
+    resetPassword: (email: string, code: string, password: string) => request<AuthResult>('POST', '/auth/password/reset', { email, code, password, client }),
     me: () => request<{ user: User }>('GET', '/auth/me').then((result) => result.user),
     logout: () => request<void>('POST', '/auth/logout'),
     logoutAll: () => request<void>('POST', '/auth/logout-all'),
