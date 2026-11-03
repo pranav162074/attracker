@@ -105,6 +105,13 @@ export default function TimetableScreen() {
             onPress={targets[step.key]}
           />
         ))}
+        {tracking ? (
+          <ListRow
+            title="Official numbers"
+            detail={summary?.checkpoint ? `Using the college’s numbers up to ${formatDate(summary.checkpoint.asOf)}` : 'Enter the attendance the college shares, typed in or from the class sheet'}
+            onPress={() => router.push(`${base}/official`)}
+          />
+        ) : null}
       </ListBox>
       {!tracking ? (
         <View style={styles.start}>

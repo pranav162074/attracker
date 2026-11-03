@@ -206,6 +206,29 @@ describe('the API client', () => {
     expect(JSON.parse(calls[4]!.init.body as string)).toEqual(extra);
   });
 
+  it('saves official numbers and uploads the class sheet as a file', async () => {
+    const { fn, calls } = fakeFetch(({ init }) =>
+      init.method === 'DELETE' ? new Response(null, { status: 204 }) : json(200, { checkpoints: [], checkpoint: { id: 2 }, preview: { registration: 'TEST0000015' } })
+    );
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
+    const input = { asOf: '2026-09-30', source: 'manual' as const, freeHeld: 0, freeAttended: 0, subjects: [{ subjectId: 1, held: 32, attended: 15 }] };
+    expect(await api.checkpoints(7)).toEqual([]);
+    expect(await api.saveCheckpoint(7, input)).toEqual({ id: 2 });
+    await api.deleteCheckpoint(7, 2);
+    const file = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0]).buffer;
+    expect(await api.readSheet(7, 'TEST 15', file)).toEqual({ registration: 'TEST0000015' });
+    expect(calls.map((call) => `${call.init.method} ${call.url.replace('http://x', '')}`)).toEqual([
+      'GET /timetables/7/checkpoints',
+      'POST /timetables/7/checkpoints',
+      'DELETE /timetables/7/checkpoints/2',
+      'POST /timetables/7/checkpoints/sheet?registration=TEST%2015',
+    ]);
+    expect(JSON.parse(calls[1]!.init.body as string)).toEqual(input);
+    expect(calls[3]!.init.body).toBe(file);
+    expect((calls[3]!.init.headers as Record<string, string>)['Content-Type']).toBe('application/octet-stream');
+    expect((calls[3]!.init.headers as Record<string, string>).Authorization).toBe('Bearer at_abc');
+  });
+
   it('accepts an empty 204 response', async () => {
     const { fn } = fakeFetch(() => new Response(null, { status: 204 }));
     const api = createApi({ baseUrl: 'http://x', mode: 'token', getToken: () => 'at_abc', fetch: fn });
