@@ -17,7 +17,8 @@
     "test": "vitest run",
     "dev": "npm run dev -w @attracker/api",
     "start": "npm start -w @attracker/api",
-    "app": "npm start -w @attracker/app"
+    "app": "npm start -w @attracker/app",
+    "build:web": "npm run build:web -w @attracker/app"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

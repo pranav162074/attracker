@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: attracker-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci -w @attracker/api
+    startCommand: npm run migrate -w @attracker/api && npm start -w @attracker/api
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: PROXY_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_CLIENT_IDS
+        sync: false
+      - key: EMAIL_TRANSPORT
+        value: brevo
+      - key: EMAIL_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false

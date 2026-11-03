@@ -19,6 +19,7 @@ const schema = z.object({
     .default('')
     .transform((value) => value.split(',').map((id) => id.trim()).filter(Boolean))
     .pipe(z.array(z.string().regex(/^[\w.-]+\.apps\.googleusercontent\.com$/, 'must be Google OAuth client IDs ending in .apps.googleusercontent.com'))),
+  PROXY_SECRET: z.union([z.literal(''), z.string().trim().min(32, 'must be at least 32 characters')]).default(''),
   EMAIL_TRANSPORT: z.enum(['log', 'brevo', 'resend']).default('log'),
   EMAIL_API_KEY: z.string().trim().default(''),
   EMAIL_FROM: z.union([z.literal(''), z.email({ error: 'must be the email address reset codes are sent from' })]).default(''),
@@ -52,6 +53,7 @@ export const env = {
   allowedOrigins: new Set(values.ALLOWED_ORIGINS.map((origin) => new URL(origin).origin)),
   sessionDays: values.SESSION_DAYS,
   googleClientIds: values.GOOGLE_CLIENT_IDS,
+  proxySecret: values.PROXY_SECRET,
   email: {
     transport: values.EMAIL_TRANSPORT,
     apiKey: values.EMAIL_API_KEY,

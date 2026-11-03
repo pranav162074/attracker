@@ -42,7 +42,32 @@ npm run app
 - **Phone:** install Expo Go from the Play Store, make sure the phone and the computer are on the same Wi-Fi, and scan the QR code. The app finds the API on the same computer as the dev server, at port 4000. On Windows, allow Node.js through the firewall when asked, on private networks.
 - **Browser:** press `w`. The website uses an HttpOnly cookie for the session; the phone app keeps its token in the Android keystore.
 
-To point the app at another API, set `EXPO_PUBLIC_API_URL`, for example `EXPO_PUBLIC_API_URL=https://attracker-api.onrender.com`.
+To point the app at another API, set `EXPO_PUBLIC_API_URL`, for example `EXPO_PUBLIC_API_URL=https://attracker.example.workers.dev/api`.
+
+## Deploying
+
+```
+browser and phone ──> Cloudflare Worker (website + /api forwarder) ──> Render (API) ──> Neon (PostgreSQL)
+```
+
+The website and the API share one address: the Worker serves the website and passes everything under `/api` on to the API. The session cookie therefore belongs to the website's own address, and the phone app uses the same `/api` address. The Worker adds a shared secret (`PROXY_SECRET`) and the visitor's address to each request; with the secret set, the API refuses anything that did not come through the Worker, apart from `/health` and `/ready`, and counts rate limits by the visitor's real address.
+
+**Database (Neon).** Create a project in the region nearest to you. Keep the pooled connection string for `DATABASE_URL` and the direct one for `DIRECT_URL`.
+
+**API (Render).** New, Blueprint, pick this repository. `render.yaml` creates a free web service in Singapore that installs only the API, runs the migrations on every start (the free plan has no separate pre-deploy step) and checks `/health`. It generates `PROXY_SECRET` and asks for:
+
+| Setting | Value |
+|---|---|
+| `DATABASE_URL`, `DIRECT_URL` | from Neon |
+| `ALLOWED_ORIGINS` | the website's address, such as `https://attracker.example.workers.dev` |
+| `GOOGLE_CLIENT_IDS` | the Google client IDs, or empty |
+| `EMAIL_API_KEY`, `EMAIL_FROM` | the Brevo API key and the sender address verified in Brevo |
+
+A free service sleeps after 15 minutes without requests, and the first request after that takes up to a minute.
+
+**Website (Cloudflare Workers).** Workers and Pages, Create, Import a repository, pick this repository and keep the root directory as `/`. Set the build command to `npm ci && npm run build:web` and leave the deploy command as `npx wrangler deploy`; `wrangler.jsonc` describes the rest. Then, under the Worker's Settings, Variables and Secrets, add `API_ORIGIN` (the Render address, such as `https://attracker-api.onrender.com`) as text and `PROXY_SECRET` (copied from Render) as a secret, and deploy again.
+
+To try the Worker on this computer: `npm run build:web`, then `npx wrangler dev` with `API_ORIGIN` and `PROXY_SECRET` in a `.dev.vars` file.
 
 ## Checks
 
@@ -131,6 +156,7 @@ Requests that change something with a cookie must come from an allowed origin (`
 | `ALLOWED_ORIGINS` | `http://localhost:8081,http://localhost:4000` | Sites allowed to call the API from a browser (CORS) and to make cookie-authenticated changes |
 | `SESSION_DAYS` | 60 | How long an unused session lasts |
 | `GOOGLE_CLIENT_IDS` | (empty: Google sign-in off) | Comma-separated OAuth client IDs (web, Android) whose tokens are accepted |
+| `PROXY_SECRET` | (empty: off) | Shared with the website's Worker; when set, only requests carrying it are served |
 | `EMAIL_TRANSPORT` | `log` | `brevo` or `resend` to send reset codes; `log` prints them in development and turns reset off in production |
 | `EMAIL_API_KEY` | (none) | The Brevo or Resend API key; keep it in `.env` or the host's settings, never in the repo |
 | `EMAIL_FROM`, `EMAIL_FROM_NAME` | (none), attracker | The sender address verified with the email service, and the name shown |

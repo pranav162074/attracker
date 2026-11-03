@@ -8,6 +8,7 @@ import { env } from './config/env.ts';
 import { pingDatabase } from './db/pool.ts';
 import { HttpError } from './http/errors.ts';
 import { cors } from './middleware/cors.ts';
+import { fromProxy } from './middleware/proxy.ts';
 import { authRoutes } from './routes/auth.ts';
 import { timetableRoutes } from './routes/timetables.ts';
 import { homeRoutes } from './routes/summary.ts';
@@ -29,6 +30,7 @@ app.use(
   })
 );
 app.use(helmet());
+app.use(fromProxy);
 app.use(cors);
 app.use(express.json({ limit: '100kb' }));
 
