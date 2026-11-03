@@ -5,6 +5,7 @@ import { api } from '../../session.tsx';
 import type { OverviewItem, TodayClass } from '../../lib/api.ts';
 import { classTitle, formatClock, formatDay, localDate, overviewLine, requiredMessage, statusText, statusTone, zoneBadge } from '../../lib/format.ts';
 import { useLoad } from '../../useLoad.ts';
+import { OfflineNotice } from '../../ui/OfflineNotice.tsx';
 import { Badge } from '../../ui/Badge.tsx';
 import { Button } from '../../ui/Button.tsx';
 import { ErrorNotice } from '../../ui/Notice.tsx';
@@ -47,7 +48,7 @@ const TimetableCard = ({ item, onPress }: { item: OverviewItem; onPress: () => v
 
 export default function Home() {
   const router = useRouter();
-  const { data, error, loading, refreshing, refresh } = useLoad(loadHome);
+  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(loadHome, 'home');
   const todayDate = data?.today[0]?.date ?? localDate();
   const timetableCount = new Set(data?.today.map((item) => item.timetableId)).size;
 
@@ -70,6 +71,7 @@ export default function Home() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
+          <OfflineNotice savedAt={savedAt} />
           <ErrorNotice message={error} />
 
           <Text style={styles.section} role="heading">

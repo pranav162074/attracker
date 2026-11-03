@@ -2,9 +2,10 @@ import { useCallback, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../../session.tsx';
-import type { Day, DayClass, Subject } from '../../../../../lib/api.ts';
+import { NetworkError } from '../../../../../lib/api.ts';
+import type { Day, DayClass, Mark, Subject } from '../../../../../lib/api.ts';
 import { isRealIso } from '../../../../../lib/dates.ts';
-import { canMark, choiceOf, dayNotes, dayTitle, dayTotals, markFor, shiftDay, statusLine } from '../../../../../lib/day.ts';
+import { applyMark, applyPending, canMark, choiceOf, dayNotes, dayTitle, dayTotals, hasStarted, markFor, shiftDay, statusLine } from '../../../../../lib/day.ts';
 import type { Choice } from '../../../../../lib/day.ts';
 import { localDate } from '../../../../../lib/format.ts';
 import { problemFrom } from '../../../../../lib/forms.ts';
@@ -12,6 +13,9 @@ import { clockToMinutes, minutesToClock, showTime } from '../../../../../lib/gri
 import type { DraftSlot } from '../../../../../lib/grid.ts';
 import { ClassEditor } from '../../../../../screens/ClassEditor.tsx';
 import { useLoad } from '../../../../../useLoad.ts';
+import { OfflineNotice } from '../../../../../ui/OfflineNotice.tsx';
+import { pendingFor, queueMark, readOutbox } from '../../../../../lib/offline.ts';
+import { storage } from '../../../../../storage.ts';
 import { Button } from '../../../../../ui/Button.tsx';
 import { Dot } from '../../../../../ui/Controls.tsx';
 import { ErrorNotice } from '../../../../../ui/Notice.tsx';
@@ -33,6 +37,11 @@ const choiceColours: Record<Choice, { background: string; text: string }> = {
 const loadDay = async (id: number, date: string) => {
   const [timetable, subjects, day] = await Promise.all([api.timetable(id), api.subjects(id, true), api.day(id, date)]);
   return { timetable, subjects, day };
+};
+
+const withPending = async (id: number, date: string, loaded: Awaited<ReturnType<typeof loadDay>>) => {
+  const pending = pendingFor(await readOutbox(storage), id, date);
+  return { ...loaded, day: applyPending(loaded.day, pending, new Date()), queued: pending.length };
 };
 
 type Editing = { kind: 'extra'; item: DayClass | null } | { kind: 'substitute'; item: DayClass };
@@ -168,11 +177,13 @@ export default function DayScreen() {
   const today = localDate();
   const date = params.date && isRealIso(params.date) ? params.date : today;
   const load = useCallback(() => loadDay(timetableId, date), [timetableId, date]);
-  const { data, error, loading, refreshing, refresh } = useLoad(load);
+  const finish = useCallback((loaded: Awaited<ReturnType<typeof loadDay>>) => withPending(timetableId, date, loaded), [timetableId, date]);
+  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `day.${timetableId}.${date}`, finish);
   const [override, setOverride] = useState<{ base: typeof data; day: Day } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [queuedCount, setQueuedCount] = useState<{ base: unknown; count: number } | null>(null);
 
   if (loading) return <Loading />;
   if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
@@ -196,12 +207,23 @@ export default function DayScreen() {
     setBusyKey(null);
   };
 
+  const markSlot = async (item: DayClass, mark: Mark) => {
+    try {
+      return await api.mark(timetableId, date, item.slotId!, mark);
+    } catch (failure) {
+      if (!(failure instanceof NetworkError)) throw failure;
+      const queued = await queueMark(storage, { timetableId, date, slotId: item.slotId!, mark });
+      setQueuedCount({ base: data, count: queued });
+      return { ...day, classes: day.classes.map((other) => (other.key === item.key ? applyMark(other, mark, hasStarted(date, other.start, new Date())) : other)) };
+    }
+  };
+
   const choose = (item: DayClass, choice: Choice) => {
     if (item.extraId !== null) {
       run(item.key, () => api.updateExtra(timetableId, item.extraId!, { attendance: choice === 'absent' ? 'absent' : 'present' }));
       return;
     }
-    run(item.key, () => api.mark(timetableId, date, item.slotId!, markFor(choice, item)));
+    run(item.key, () => markSlot(item, markFor(choice, item)));
   };
 
   const totals = dayTotals(day);
@@ -236,6 +258,7 @@ export default function DayScreen() {
           {notes.map((note) => (
             <Muted key={note}>{note}</Muted>
           ))}
+          <OfflineNotice savedAt={savedAt} queued={queuedCount && queuedCount.base === data ? queuedCount.count : data.queued} />
           <ErrorNotice message={message} />
           {day.classes.length === 0 ? (
             <Muted>{day.kind === 'holiday' || day.kind === 'outside' ? 'No classes.' : 'No classes on this day.'}</Muted>
@@ -276,7 +299,7 @@ export default function DayScreen() {
             const item = editing.item;
             setEditing(null);
             const choice = choiceOf(item) === 'absent' ? 'absent' : 'present';
-            run(item.key, () => api.mark(timetableId, date, item.slotId!, { attendance: choice, substituteSubjectId: subjectId === item.scheduledSubjectId ? null : subjectId }));
+            run(item.key, () => markSlot(item, { attendance: choice, substituteSubjectId: subjectId === item.scheduledSubjectId ? null : subjectId }));
           }}
         />
       ) : null}

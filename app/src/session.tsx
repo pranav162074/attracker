@@ -5,6 +5,9 @@ import { createApi } from './lib/api.ts';
 import type { Api } from './lib/api.ts';
 import { acceptAuth, endSession, restoreSession } from './lib/session.ts';
 import type { SessionState, TokenHolder } from './lib/session.ts';
+import { forgetEverything, rememberUser, rememberedUser } from './lib/offline.ts';
+import type { User } from './lib/api.ts';
+import { storage } from './storage.ts';
 import { tokenStore } from './tokenStore';
 
 const holder: TokenHolder = { current: null };
@@ -17,6 +20,7 @@ export const api: Api = createApi({
   onUnauthorized: () => {
     holder.current = null;
     tokenStore.clear().catch(() => {});
+    forgetEverything(storage);
     onSessionLost();
   },
 });
@@ -37,6 +41,12 @@ export const useSession = () => {
   return value;
 };
 
+const signedIn = async (next: SessionState) => {
+  await forgetEverything(storage);
+  if (next.status === 'signedIn') await rememberUser(storage, next.user);
+  return next;
+};
+
 const MISSING_URL = 'The app does not know where the attracker server is. Set EXPO_PUBLIC_API_URL.';
 
 export const SessionProvider = ({ children }: PropsWithChildren) => {
@@ -53,7 +63,9 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     if (!apiUrl) return;
     let active = true;
-    restoreSession(api, tokenStore, holder, apiMode === 'token').then((next) => {
+    restoreSession(api, tokenStore, holder, apiMode === 'token', () => rememberedUser<User>(storage)).then((next) => {
+      if (next.status === 'signedIn') rememberUser(storage, next.user);
+      if (next.status === 'signedOut') forgetEverything(storage);
       if (active) setState(next);
     });
     return () => {
@@ -63,9 +75,13 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
 
   const value: SessionValue = {
     state,
-    logIn: async (email, password) => setState(await acceptAuth(await api.login(email, password), tokenStore, holder)),
-    signUp: async (email, password) => setState(await acceptAuth(await api.signup(email, password), tokenStore, holder)),
-    logOut: async () => setState(await endSession(api, tokenStore, holder)),
+    logIn: async (email, password) => setState(await signedIn(await acceptAuth(await api.login(email, password), tokenStore, holder))),
+    signUp: async (email, password) => setState(await signedIn(await acceptAuth(await api.signup(email, password), tokenStore, holder))),
+    logOut: async () => {
+      const next = await endSession(api, tokenStore, holder);
+      await forgetEverything(storage);
+      setState(next);
+    },
     retry: () => {
       setState({ status: 'loading' });
       setAttempt((count) => count + 1);

@@ -54,6 +54,18 @@ describe('restoring a session when the app opens', () => {
     expect(store.value()).toBe('at_saved');
   });
 
+  it('opens with the remembered login when offline, so saved numbers can be shown', async () => {
+    const store = memoryStore('at_saved');
+    const state = await restoreSession(fakeApi(async () => Promise.reject(new NetworkError())), store, { current: null }, true, async () => USER);
+    expect(state).toEqual({ status: 'signedIn', user: USER });
+    expect(store.value()).toBe('at_saved');
+  });
+
+  it('does not use the remembered login when the server says the session is over', async () => {
+    const state = await restoreSession(fakeApi(async () => Promise.reject(new ApiError(401, 'unauthorized', 'Log in to continue'))), memoryStore('at_old'), { current: null }, true, async () => USER);
+    expect(state).toEqual({ status: 'signedOut' });
+  });
+
   it('asks the server on the web, where the cookie is invisible to the app', async () => {
     const api = fakeApi(async () => USER);
     expect(await restoreSession(api, memoryStore(), { current: null }, false)).toEqual({ status: 'signedIn', user: USER });
