@@ -9,3 +9,5 @@ coverage/
 Thumbs.db
 .expo/
 web-build/
+.wrangler/
+.dev.vars

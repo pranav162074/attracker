@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/', '**/dist/', '**/coverage/', 'app/.expo/', 'app/web-build/'] },
+  { ignores: ['**/node_modules/', '**/dist/', '**/coverage/', 'app/.expo/', 'app/web-build/', '.wrangler/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
