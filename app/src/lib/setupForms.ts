@@ -136,4 +136,4 @@ export const subjectNote = (subject: Pick<Subject, 'kind' | 'countsAttendance' |
   return parts.join(' · ');
 };
 
-export const STEP_TITLES = { dates: 'Dates and attendance rules', subjects: 'Subjects', grid: 'Weekly timetable', holidays: 'Holidays and special days' } as const;
+export const STEP_TITLES = { dates: 'Dates and attendance rules', subjects: 'Subjects', grid: 'Weekly timetable', holidays: 'Holidays and special days', official: 'Official numbers' } as const;

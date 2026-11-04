@@ -35,12 +35,12 @@ describe.skipIf(skipWithoutDatabase)('setting up and starting to track', () => {
   it('starts every new timetable in setup', async () => {
     const user = await newUser();
     const { timetable, base } = await college(user);
-    expect(timetable).toMatchObject({ status: 'setup', trackingStartedAt: null });
+    expect(timetable).toMatchObject({ status: 'setup', trackingStartedAt: null, trackingStartedOn: null });
 
     const setup = await user.get(`${base}/setup`);
     expect(setup.status).toBe(200);
     expect(setup.body).toMatchObject({ status: 'setup', ready: false });
-    expect(steps(setup.body)).toEqual({ dates: true, subjects: false, grid: false, holidays: false });
+    expect(steps(setup.body)).toEqual({ dates: true, subjects: false, grid: false, holidays: false, official: false });
     expect(setup.body.steps[0].message).toBe('Runs from 2026-07-20 to 2026-11-14');
   });
 
@@ -51,7 +51,7 @@ describe.skipIf(skipWithoutDatabase)('setting up and starting to track', () => {
     expect(refused.status).toBe(409);
     expect(refused.body.error).toBe('not_ready');
     expect(refused.body.message).toBe('Add at least one subject that counts for attendance. Fill in the weekly timetable');
-    expect(refused.body.details).toHaveLength(4);
+    expect(refused.body.details).toHaveLength(5);
     expect((await user.get(base)).body.timetable.status).toBe('setup');
   });
 
@@ -99,17 +99,42 @@ describe.skipIf(skipWithoutDatabase)('setting up and starting to track', () => {
       '9 subjects counted for attendance',
       '24 classes a week',
       '2 holidays and special days added',
+      'Starting partway through the semester? Enter the latest attendance the college gave you, and the app counts on from the next day.',
     ]);
 
     const started = await user.post(`${base}/start`);
     expect(started.status).toBe(200);
-    expect(started.body.timetable).toMatchObject({ status: 'tracking', trackingStartedAt: expect.any(String) });
+    expect(started.body.timetable).toMatchObject({ status: 'tracking', trackingStartedAt: expect.any(String), trackingStartedOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
     expect((await user.get('/timetables')).body.timetables[0].status).toBe('tracking');
     expect((await user.get(`${base}/setup`)).body.status).toBe('tracking');
 
     const again = await user.post(`${base}/start`);
     expect(again.status).toBe(200);
     expect(again.body.timetable.trackingStartedAt).toBe(started.body.timetable.trackingStartedAt);
+  });
+
+  it('takes official numbers during setup, for someone starting partway through the semester', async () => {
+    const user = await newUser();
+    const { timetable, base } = await college(user);
+    const ids = await fillIn(user, base);
+    const saved = await user.post(`${base}/checkpoints`, { asOf: '2026-08-31', subjects: [{ subjectId: ids.CN, held: 18, attended: 15 }] });
+    expect(saved.status).toBe(201);
+    const setup = (await user.get(`${base}/setup`)).body;
+    expect(setup.status).toBe('setup');
+    expect(setup.ready).toBe(true);
+    expect(setup.steps.find((step: { key: string }) => step.key === 'official')).toEqual({
+      key: 'official',
+      required: false,
+      done: true,
+      message: 'Using the college’s numbers up to 2026-08-31',
+    });
+    expect((await user.post(`${base}/start`)).status).toBe(200);
+    expect((await user.get(`${base}/summary`)).body.summary.checkpoint.asOf).toBe('2026-08-31');
+
+    await pool.query("UPDATE timetables SET tracking_started_at = '2026-09-06T20:00:00Z', time_zone = 'Asia/Kolkata' WHERE id = $1", [timetable.id]);
+    expect((await user.get(base)).body.timetable.trackingStartedOn).toBe('2026-09-07');
+    await pool.query("UPDATE timetables SET time_zone = 'Europe/London' WHERE id = $1", [timetable.id]);
+    expect((await user.get(base)).body.timetable.trackingStartedOn).toBe('2026-09-06');
   });
 
   it('lets holidays be skipped, for things like a dance class with no end date', async () => {

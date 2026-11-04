@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { nowIn } from '../attendance/load.ts';
 import { query, withTransaction } from '../db/pool.ts';
 import { HttpError } from '../http/errors.ts';
 import { settingsProblem } from './schemas.ts';
@@ -36,6 +37,7 @@ export const toTimetable = (row: Row) => ({
   archived: row.archived_at !== null,
   status: row.tracking_started_at === null ? ('setup' as const) : ('tracking' as const),
   trackingStartedAt: row.tracking_started_at?.toISOString() ?? null,
+  trackingStartedOn: row.tracking_started_at ? nowIn(row.time_zone, row.tracking_started_at).date : null,
   createdAt: row.created_at.toISOString(),
   updatedAt: row.updated_at.toISOString(),
 });

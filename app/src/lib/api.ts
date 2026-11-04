@@ -66,6 +66,7 @@ export type Timetable = {
   archived: boolean;
   status: 'setup' | 'tracking';
   trackingStartedAt: string | null;
+  trackingStartedOn: string | null;
 };
 
 export type TimetableInput = {
@@ -101,7 +102,7 @@ export type SubjectInput = {
 };
 
 export type SetupStep = {
-  key: 'dates' | 'subjects' | 'grid' | 'holidays';
+  key: 'dates' | 'subjects' | 'grid' | 'holidays' | 'official';
   required: boolean;
   done: boolean;
   message: string;

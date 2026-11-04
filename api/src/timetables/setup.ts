@@ -3,7 +3,7 @@ import { pool, withTransaction } from '../db/pool.ts';
 import { HttpError } from '../http/errors.ts';
 import { toTimetable } from './repo.ts';
 
-type Step = { key: 'dates' | 'subjects' | 'grid' | 'holidays'; required: boolean; done: boolean; message: string };
+type Step = { key: 'dates' | 'subjects' | 'grid' | 'holidays' | 'official'; required: boolean; done: boolean; message: string };
 
 type Facts = {
   starts_on: string;
@@ -13,6 +13,7 @@ type Facts = {
   first_version_from: string | null;
   counted_slots_at_start: number;
   calendar_entries: number;
+  latest_official: string | null;
 };
 
 const FACTS_SQL = `
@@ -23,7 +24,8 @@ const FACTS_SQL = `
            WHERE g.version_id = (SELECT v.id FROM grid_versions v WHERE v.timetable_id = t.id AND v.effective_from <= t.starts_on
                                   ORDER BY v.effective_from DESC LIMIT 1)
              AND s.counts_attendance) AS counted_slots_at_start,
-         (SELECT count(*)::int FROM calendar_days c WHERE c.timetable_id = t.id) AS calendar_entries
+         (SELECT count(*)::int FROM calendar_days c WHERE c.timetable_id = t.id) AS calendar_entries,
+         (SELECT max(k.as_of)::text FROM checkpoints k WHERE k.timetable_id = t.id) AS latest_official
     FROM timetables t
    WHERE t.id = $1 AND t.user_id = $2`;
 
@@ -65,6 +67,15 @@ const checklist = (facts: Facts): Step[] => {
         facts.calendar_entries > 0
           ? `${facts.calendar_entries} holiday${facts.calendar_entries === 1 ? '' : 's'} and special day${facts.calendar_entries === 1 ? '' : 's'} added`
           : 'No holidays added yet. Add them now so they are not counted as classes, or later at any time.',
+    },
+    {
+      key: 'official',
+      required: false,
+      done: facts.latest_official !== null,
+      message:
+        facts.latest_official !== null
+          ? `Using the college’s numbers up to ${facts.latest_official}`
+          : 'Starting partway through the semester? Enter the latest attendance the college gave you, and the app counts on from the next day.',
     },
   ];
   return steps;
