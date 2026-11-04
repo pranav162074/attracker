@@ -15,6 +15,7 @@ import { Dashboard } from '../../../../screens/Dashboard.tsx';
 import { useLoad } from '../../../../useLoad.ts';
 import { OfflineNotice } from '../../../../ui/OfflineNotice.tsx';
 import { Button } from '../../../../ui/Button.tsx';
+import { ConfirmButton } from '../../../../ui/ConfirmButton.tsx';
 import { ListBox, ListRow } from '../../../../ui/Controls.tsx';
 import { ErrorNotice } from '../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../ui/Page.tsx';
@@ -85,6 +86,16 @@ export default function TimetableScreen() {
   };
   const listed = tracking ? setup.steps.filter((step) => step.key !== 'official') : setup.steps;
   const missing = setup.steps.filter((step) => step.required && !step.done);
+
+  const remove = async () => {
+    setMessage(null);
+    try {
+      await api.deleteTimetable(timetable.id);
+      router.dismissTo('/');
+    } catch (failure) {
+      setMessage(problemFrom(failure).message);
+    }
+  };
 
   const start = async () => {
     setStarting(true);
@@ -158,6 +169,15 @@ export default function TimetableScreen() {
           {!setup.ready ? <Text style={styles.startNote}>Still needed: {missing.map((step) => STEP_TITLES[step.key].toLowerCase()).join(' and ')}.</Text> : null}
         </View>
       ) : null}
+      <View style={styles.danger}>
+        <SectionTitle>Delete timetable</SectionTitle>
+        <ConfirmButton
+          title="Delete this timetable"
+          question={`Delete "${timetable.name}" with all its subjects, classes and attendance? This cannot be undone.`}
+          confirmTitle="Delete"
+          onConfirm={remove}
+        />
+      </View>
     </Page>
   );
 }
@@ -168,6 +188,7 @@ const styles = StyleSheet.create({
   markText: { fontSize: 13, color: colors.muted, fontWeight: '600' },
   markTextDone: { color: tones.good.text },
   start: { marginTop: space.xl },
+  danger: { marginTop: space.xxl },
   markButtons: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
   markButton: { flex: 1 },
   gap: { height: space.lg },
