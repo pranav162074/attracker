@@ -71,6 +71,7 @@ describe('the timetable form', () => {
       archived: false,
       status: 'setup',
       trackingStartedAt: null,
+      trackingStartedOn: null,
     };
     expect(timetableFormFrom(saved)).toEqual({ name: 'Dance', startsOn: '2026-09-01', endsOn: null, requiredPercent: '80', condonationPercent: '' });
   });

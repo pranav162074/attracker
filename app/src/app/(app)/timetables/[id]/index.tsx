@@ -1,12 +1,16 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { api } from '../../../../session.tsx';
 import type { SetupStep, Timetable } from '../../../../lib/api.ts';
-import { formatDate, friendlyDates } from '../../../../lib/dates.ts';
+import { canCount, catchUpKey, classDays, findCatchUp, officialDetail } from '../../../../lib/catchUp.ts';
+import { formatDate, friendlyDates, parseIso } from '../../../../lib/dates.ts';
 import { localDate } from '../../../../lib/format.ts';
 import { problemFrom } from '../../../../lib/forms.ts';
+import { monthParam } from '../../../../lib/month.ts';
 import { STEP_TITLES } from '../../../../lib/setupForms.ts';
+import { prefs } from '../../../../prefs';
+import { CatchUpNotice } from '../../../../screens/CatchUpNotice.tsx';
 import { Dashboard } from '../../../../screens/Dashboard.tsx';
 import { useLoad } from '../../../../useLoad.ts';
 import { OfflineNotice } from '../../../../ui/OfflineNotice.tsx';
@@ -32,8 +36,12 @@ const Mark = ({ step, index }: { step: SetupStep; index: number }) => (
 const loadAll = async (id: number) => {
   const [timetable, setup] = await Promise.all([api.timetable(id), api.setup(id)]);
   const summary = setup.status === 'tracking' ? await api.summary(id) : null;
-  return { timetable, setup, summary };
+  const catchUp = summary ? findCatchUp(timetable, summary.checkpoint?.asOf ?? null) : null;
+  const withClasses = catchUp && canCount(catchUp) ? classDays((await api.days(id, catchUp.from, catchUp.to)).days) : null;
+  return { timetable, setup, summary, catchUp: withClasses === 0 ? null : catchUp, withClasses };
 };
+
+const dismissKey = (id: number) => `catchUp.${id}`;
 
 export default function TimetableScreen() {
   const router = useRouter();
@@ -43,11 +51,22 @@ export default function TimetableScreen() {
   const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `timetable.${timetableId}`);
   const [starting, setStarting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    prefs.read(dismissKey(timetableId)).then((value) => {
+      if (active) setDismissed(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [timetableId]);
 
   if (loading) return <Loading />;
   if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
 
-  const { timetable, setup, summary } = data;
+  const { timetable, setup, summary, catchUp, withClasses } = data;
   const tracking = setup.status === 'tracking';
   const base = `/timetables/${timetable.id}` as const;
   const targets: Partial<Record<SetupStep['key'], () => void>> = {
@@ -55,7 +74,16 @@ export default function TimetableScreen() {
     subjects: () => router.push(`${base}/subjects`),
     grid: () => router.push(`${base}/grid`),
     holidays: () => router.push(`${base}/calendar`),
+    official: () => router.push(`${base}/official`),
   };
+  const showCatchUp = catchUp !== null && dismissed !== undefined && dismissed !== catchUpKey(catchUp);
+  const finishCatchUp = () => {
+    if (!catchUp) return;
+    const key = catchUpKey(catchUp);
+    setDismissed(key);
+    prefs.save(dismissKey(timetable.id), key);
+  };
+  const listed = tracking ? setup.steps.filter((step) => step.key !== 'official') : setup.steps;
   const missing = setup.steps.filter((step) => step.required && !step.done);
 
   const start = async () => {
@@ -86,6 +114,19 @@ export default function TimetableScreen() {
               <Button title="Month view" variant="secondary" onPress={() => router.push(`${base}/month`)} />
             </View>
           </View>
+          {showCatchUp && catchUp ? (
+            <CatchUpNotice
+              catchUp={catchUp}
+              withClasses={withClasses}
+              onMark={() => router.push(`${base}/month?m=${monthParam(parseIso(catchUp.from))}`)}
+              onOfficial={() => router.push(`${base}/official`)}
+              onDone={finishCatchUp}
+            />
+          ) : null}
+          <ListBox>
+            <ListRow title="Official numbers" detail={officialDetail(summary.checkpoint?.asOf ?? null)} onPress={targets.official} />
+          </ListBox>
+          <View style={styles.gap} />
           <Dashboard summary={summary} onOpenSubject={(subjectId) => router.push(`${base}/subject/${subjectId}`)} />
         </>
       ) : null}
@@ -95,10 +136,13 @@ export default function TimetableScreen() {
           <Muted>Changes here update your attendance straight away.</Muted>
         </>
       ) : (
-        <Muted>Fill these in, then press Start Tracking. Every class counts as attended until you mark it otherwise. You can change all of this later.</Muted>
+        <Muted>
+          Fill these in, then press Start Tracking. Every class counts as attended until you mark it otherwise. Starting partway through the semester? Add the latest official numbers too, so the weeks before
+          use the college’s count. You can change all of this later.
+        </Muted>
       )}
       <ListBox>
-        {setup.steps.map((step, index) => (
+        {listed.map((step, index) => (
           <ListRow
             key={step.key}
             title={`${STEP_TITLES[step.key]}${step.required || tracking ? '' : ' (optional)'}`}
@@ -107,13 +151,6 @@ export default function TimetableScreen() {
             onPress={targets[step.key]}
           />
         ))}
-        {tracking ? (
-          <ListRow
-            title="Official numbers"
-            detail={summary?.checkpoint ? `Using the college’s numbers up to ${formatDate(summary.checkpoint.asOf)}` : 'Enter the attendance the college shares, typed in or from the class sheet'}
-            onPress={() => router.push(`${base}/official`)}
-          />
-        ) : null}
       </ListBox>
       {!tracking ? (
         <View style={styles.start}>
@@ -133,5 +170,6 @@ const styles = StyleSheet.create({
   start: { marginTop: space.xl },
   markButtons: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
   markButton: { flex: 1 },
+  gap: { height: space.lg },
   startNote: { fontSize: 13, color: colors.muted, marginTop: space.sm, textAlign: 'center' },
 });
