@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Line, SubjectTally } from '../src/lib/api.ts';
-import { condonationMessage, findLine, missedLine, outlookMessage, sourceNote, subjectCount, subjectTone } from '../src/lib/dashboard.ts';
+import { condonationMessage, findLine, missedLine, outlookMessage, sourceNote, subjectCount, subjectsFrom, subjectsNote, subjectTone } from '../src/lib/dashboard.ts';
 import { amount, lineMessage } from '../src/lib/format.ts';
 
 const required = (values: Partial<Line>): Line => ({ name: 'required', percent: 75, met: false, canMiss: 0, need: 0, reachable: true, ...values });
@@ -63,8 +63,17 @@ describe('the overall card, with the real September sheet', () => {
   it('counts what was missed and says where the numbers come from', () => {
     expect(missedLine(september)).toBe('Missed 96 classes');
     expect(missedLine({ missed: 0, held: 10 })).toBeNull();
-    expect(sourceNote({ checkpoint: { asOf: '2026-09-30' } })).toBe('Uses the official numbers up to 30 Sep 2026, then your own marks.');
+    expect(sourceNote({ checkpoint: { asOf: '2026-09-30', overallOnly: false } })).toBe('Uses the official numbers up to 30 Sep 2026, then your own marks.');
+    expect(sourceNote({ checkpoint: { asOf: '2026-10-31', overallOnly: true } })).toBe('Uses the official overall percentage up to 31 Oct 2026, then your own marks.');
     expect(sourceNote({ checkpoint: null })).toBeNull();
+  });
+
+  it('says subjects count from the next day when only the overall is official', () => {
+    const overallOnly = { checkpoint: { asOf: '2026-10-31', overallOnly: true } };
+    expect(subjectsFrom(overallOnly)).toBe('2026-11-01');
+    expect(subjectsNote(overallOnly)).toBe('The official numbers up to 31 Oct 2026 are for the overall only, so each subject counts from 1 Nov 2026.');
+    expect(subjectsFrom({ checkpoint: { asOf: '2026-10-31', overallOnly: false } })).toBeNull();
+    expect(subjectsNote({ checkpoint: null })).toBeNull();
   });
 });
 
@@ -85,6 +94,8 @@ describe('subjects', () => {
     expect(subjectCount(subject({}))).toBe('27 of 30 periods');
     expect(subjectCount(subject({ unitsPerClass: 1, held: 26, attended: 18 }))).toBe('18 of 26');
     expect(subjectCount(subject({ held: 0, attended: 0 }))).toBe('No classes yet');
+    expect(subjectCount(subject({ unitsPerClass: 1, held: 12, attended: 10 }), '2026-11-01')).toBe('Since 1 Nov 2026: 10 of 12');
+    expect(subjectCount(subject({ held: 0, attended: 0 }), '2026-11-01')).toBe('No classes since 1 Nov 2026 yet');
   });
 
   it('colours a subject by which line it is above', () => {

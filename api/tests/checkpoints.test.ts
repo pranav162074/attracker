@@ -121,7 +121,7 @@ describe.skipIf(skipWithoutDatabase)('official numbers from the class sheet', ()
 
     const { summary } = (await user.get(`${base}/summary?asOf=2026-09-30`)).body;
     expect(summary.overall).toMatchObject({ held: 246, attended: 150, percentText: '60.97', zone: 'below', bestText: '77.51' });
-    expect(summary.checkpoint).toEqual({ asOf: '2026-09-30' });
+    expect(summary.checkpoint).toEqual({ asOf: '2026-09-30', overallOnly: false });
   });
 
   it('explains files and requests it cannot use', async () => {
@@ -168,6 +168,12 @@ describe.skipIf(skipWithoutDatabase)('official numbers typed in', () => {
       [{ asOf: '2026-09-30', subjects: [{ subjectId: ids.CN, held: 10, attended: 11 }] }, 'attended cannot be more than held'],
       [{ asOf: '2026-09-30', subjects: [{ subjectId: ids.CN, held: 10, attended: 5 }, { subjectId: ids.CN, held: 10, attended: 5 }] }, 'Each subject can appear only once'],
       [{ asOf: '2026-09-30', subjects: [] }, 'Give the numbers for at least one subject'],
+      [{ asOf: '2026-09-30' }, 'Give the numbers for at least one subject'],
+      [{ asOf: '2026-09-30', overallBp: 7024, subjects: [{ subjectId: ids.CN, held: 1, attended: 1 }] }, 'Give either subject numbers or an overall percentage, not both'],
+      [{ asOf: '2026-09-30', overallBp: 10001 }, 'The percentage cannot be more than 100'],
+      [{ asOf: '2026-09-30', overallBp: 70.24 }, 'overallBp must be a whole number of hundredths'],
+      [{ asOf: '2026-09-30', overallBp: 7024, overallHeld: 0 }, 'Classes held must be at least 1'],
+      [{ asOf: '2026-09-30', overallHeld: 300, subjects: [{ subjectId: ids.CN, held: 1, attended: 1 }] }, 'overallHeld goes with overallBp'],
       [{ asOf: '2026-09-30', freeHeld: 3, freeAttended: 5, subjects: [{ subjectId: ids.CN, held: 1, attended: 1 }] }, 'freeAttended cannot be more than freeHeld'],
       [{ asOf: '2026-09-30', subjects: [{ subjectId: ids.CN, held: -1, attended: 0 }] }, 'held cannot be negative'],
       [{ asOf: '2026-09-30', subjects: [{ subjectId: foreign, held: 1, attended: 1 }] }, `Subject ${foreign} is not part of this timetable`],
@@ -203,5 +209,55 @@ describe.skipIf(skipWithoutDatabase)('official numbers typed in', () => {
       expect(res.status).toBe(404);
     }
     expect((await owner.get(`${base}/checkpoints`)).body.checkpoints[0].subjects[0].attended).toBe(18);
+  });
+});
+
+describe.skipIf(skipWithoutDatabase)('official numbers as one overall percentage', () => {
+  it('estimate the classes held from the timetable, so a percentage can be turned into counts', async () => {
+    const { user, base } = await setUp();
+    const estimate = await user.get(`${base}/checkpoints/estimate?asOf=2026-09-30`);
+    expect(estimate.status).toBe(200);
+    expect(estimate.body.estimate).toEqual({ asOf: '2026-09-30', held: 295 });
+    expect((await user.get(`${base}/checkpoints/estimate?asOf=2026-02-30`)).status).toBe(400);
+    expect((await user.get(`${base}/checkpoints/estimate?asOf=2026-12-01`)).body.message).toBe('asOf must be within the timetable’s dates');
+  });
+
+  it('save the percentage against the estimate, or against the held count the student knows', async () => {
+    const { user, base } = await setUp();
+    const saved = await user.post(`${base}/checkpoints`, { asOf: '2026-09-30', overallBp: 7024 });
+    expect(saved.status).toBe(201);
+    expect(saved.body.checkpoint).toMatchObject({ asOf: '2026-09-30', overallBp: 7024, freeHeld: 295, freeAttended: 207, subjects: [] });
+
+    const known = await user.post(`${base}/checkpoints`, { asOf: '2026-09-30', overallBp: 6097, overallHeld: 246 });
+    expect(known.body.checkpoint).toMatchObject({ freeHeld: 246, freeAttended: 150 });
+    expect((await user.get(`${base}/checkpoints`)).body.checkpoints).toHaveLength(1);
+  });
+
+  it('make the overall exact up to the date and count each subject only from the next day', async () => {
+    const { user, base } = await setUp();
+    await user.post(`${base}/checkpoints`, { asOf: '2026-09-30', overallBp: 6097, overallHeld: 246 });
+    const summary = (await user.get(`${base}/summary`)).body.summary;
+    expect(summary.checkpoint).toEqual({ asOf: '2026-09-30', overallOnly: true });
+    expect(summary.overall.held).toBeGreaterThan(246);
+    const subjectsHeld = summary.subjects.reduce((sum: number, row: { held: number }) => sum + row.held, 0);
+    expect(summary.overall.held).toBe(246 + subjectsHeld);
+    expect(summary.overall.attended).toBe(150 + subjectsHeld);
+  });
+
+  it('refuse a percentage when the timetable has no classes up to the date', async () => {
+    const user = await newUser();
+    const timetable = (await user.post('/timetables', { name: 'Empty', startsOn: '2026-07-20', endsOn: '2026-11-14' })).body.timetable;
+    await user.post(`/timetables/${timetable.id}/subjects`, { name: 'Maths' });
+    const res = await user.post(`/timetables/${timetable.id}/checkpoints`, { asOf: '2026-08-01', overallBp: 8000 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'no_classes', message: 'Your timetable has no classes up to this date, so enter how many classes were held' });
+    expect((await user.post(`/timetables/${timetable.id}/checkpoints`, { asOf: '2026-08-01', overallBp: 8000, overallHeld: 10 })).body.checkpoint.freeAttended).toBe(8);
+  });
+
+  it('are private', async () => {
+    const { base } = await setUp();
+    const intruder = await newUser('intruder');
+    expect((await intruder.get(`${base}/checkpoints/estimate?asOf=2026-09-30`)).status).toBe(404);
+    expect((await intruder.post(`${base}/checkpoints`, { asOf: '2026-09-30', overallBp: 7000 })).status).toBe(404);
   });
 });

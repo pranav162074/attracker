@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Summary } from '../lib/api.ts';
-import { condonationMessage, findLine, missedLine, outlookMessage, sourceNote, subjectCount, subjectTone } from '../lib/dashboard.ts';
+import { condonationMessage, findLine, missedLine, outlookMessage, sourceNote, subjectCount, subjectsFrom, subjectsNote, subjectTone } from '../lib/dashboard.ts';
 import { lineMessage, zoneBadge } from '../lib/format.ts';
 import { Badge } from '../ui/Badge.tsx';
 import { Dot } from '../ui/Controls.tsx';
@@ -14,6 +14,8 @@ export const Dashboard = ({ summary, onOpenSubject }: { summary: Summary; onOpen
   const messages = overall.held === 0 ? [] : [lineMessage(findLine(overall, 'required')), condonationMessage(overall)].filter((text): text is string => Boolean(text));
   const outlook = outlookMessage(overall);
   const note = sourceNote(summary);
+  const since = subjectsFrom(summary);
+  const perSubject = subjectsNote(summary);
 
   return (
     <View>
@@ -34,6 +36,7 @@ export const Dashboard = ({ summary, onOpenSubject }: { summary: Summary; onOpen
       </View>
 
       <SectionTitle>Subjects</SectionTitle>
+      {perSubject ? <Text style={styles.subjectsNote}>{perSubject}</Text> : null}
       {summary.subjects.length === 0 ? (
         <Text style={styles.muted}>No subjects count for attendance.</Text>
       ) : (
@@ -57,7 +60,7 @@ export const Dashboard = ({ summary, onOpenSubject }: { summary: Summary; onOpen
                     {row.name}
                     {row.archived ? ' (archived)' : ''}
                   </Text>
-                  <Text style={styles.rowDetail}>{subjectCount(row)}</Text>
+                  <Text style={styles.rowDetail}>{subjectCount(row, since)}</Text>
                   {message ? <Text style={styles.rowDetail}>{message}</Text> : null}
                 </View>
                 <Text style={[styles.rowPercent, { color: tone === 'neutral' ? colors.muted : tones[tone].text }]}>{row.percent === null ? '–' : `${row.percentText}%`}</Text>
@@ -79,6 +82,7 @@ const styles = StyleSheet.create({
   message: { fontSize: 15, color: colors.text, marginTop: space.md, lineHeight: 21 },
   outlook: { fontSize: 14, color: colors.text, marginTop: space.md, lineHeight: 20 },
   note: { fontSize: 13, color: colors.muted, marginTop: space.md, lineHeight: 18 },
+  subjectsNote: { fontSize: 13, color: colors.muted, lineHeight: 18, marginBottom: space.sm },
   list: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' },
   row: {
     flexDirection: 'row',

@@ -4,8 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../../session.tsx';
 import { ApiError } from '../../../../../lib/api.ts';
 import type { HistoryEvent } from '../../../../../lib/api.ts';
-import { condonationMessage, findLine, missedLine, subjectCount, subjectTone } from '../../../../../lib/dashboard.ts';
-import { formatDate } from '../../../../../lib/dates.ts';
+import { condonationMessage, findLine, missedLine, sourceNote, subjectCount, subjectsFrom, subjectsNote, subjectTone } from '../../../../../lib/dashboard.ts';
 import { lineMessage, localDate } from '../../../../../lib/format.ts';
 import { KIND_LABELS } from '../../../../../lib/setupForms.ts';
 import { eventText, eventTone, eventWhen, missedTotal, splitHistory, subjectOutlook, weeklyLoad, weeklySlots } from '../../../../../lib/subject.ts';
@@ -79,14 +78,14 @@ export default function SubjectPage() {
         {row ? (
           <>
             {row.percent !== null ? <Text style={[styles.percent, { color: tone === 'neutral' ? colors.text : tones[tone].text }]}>{row.percentText}%</Text> : null}
-            <Text style={styles.muted}>{[subjectCount(row), missedLine(row, units)].filter(Boolean).join(' · ')}</Text>
+            <Text style={styles.muted}>{[subjectCount(row, subjectsFrom(summary)), missedLine(row, units)].filter(Boolean).join(' · ')}</Text>
             {messages.map((text) => (
               <Text key={text} style={styles.message}>
                 {text}
               </Text>
             ))}
             {outlook ? <Text style={styles.outlook}>{outlook}</Text> : null}
-            {summary.checkpoint ? <Text style={styles.note}>Uses the official numbers up to {formatDate(summary.checkpoint.asOf)}, then your own marks.</Text> : null}
+            {summary.checkpoint ? <Text style={styles.note}>{subjectsNote(summary) ?? sourceNote(summary)}</Text> : null}
           </>
         ) : (
           <Text style={styles.muted}>{subject.countsAttendance ? 'No classes yet.' : 'This subject is not counted, so it has no percentage.'}</Text>

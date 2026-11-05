@@ -22,6 +22,7 @@ export default function SignedInLayout() {
       <Stack.Screen name="timetables/[id]/official/index" options={{ title: 'Official numbers' }} />
       <Stack.Screen name="timetables/[id]/official/new" options={{ title: 'Type in official numbers' }} />
       <Stack.Screen name="timetables/[id]/official/sheet" options={{ title: 'Read the class sheet' }} />
+      <Stack.Screen name="timetables/[id]/official/overall" options={{ title: 'Overall percentage' }} />
       <Stack.Screen name="timetables/[id]/month" options={{ title: 'Month' }} />
       <Stack.Screen name="timetables/[id]/days/[date]" options={{ title: 'Day' }} />
       <Stack.Screen name="timetables/[id]/grid" options={{ title: 'Weekly timetable' }} />

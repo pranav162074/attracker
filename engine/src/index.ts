@@ -3,7 +3,7 @@ export type { Hundredths } from './percent.ts';
 export { isRealDate, isoWeekday, addDays, WEEKDAY_NAMES } from './dates.ts';
 export { parseHolidays } from './holidays.ts';
 export type { ParsedHoliday, HolidayParse } from './holidays.ts';
-export { dayPlan, summarize, canMiss, needToAttend } from './attendance.ts';
+export { dayPlan, summarize, canMiss, needToAttend, heldUpTo } from './attendance.ts';
 export type {
   EngineInput,
   EngineSubject,

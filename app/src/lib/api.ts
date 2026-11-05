@@ -173,7 +173,7 @@ export type Summary = {
   timetableId: number;
   status: 'setup' | 'tracking';
   asOf: { date: string; time: string };
-  checkpoint: { asOf: string } | null;
+  checkpoint: { asOf: string; overallOnly: boolean } | null;
   overall: Tally & { zone: Zone; freeHeld: number; freeAttended: number };
   subjects: SubjectTally[];
 };
@@ -243,6 +243,7 @@ export type Checkpoint = {
   id: number;
   asOf: string;
   source: 'manual' | 'sheet';
+  overallBp: number | null;
   freeHeld: number;
   freeAttended: number;
   createdAt: string;
@@ -250,6 +251,8 @@ export type Checkpoint = {
 };
 
 export type CheckpointInput = { asOf: string; source: 'manual' | 'sheet'; freeHeld: number; freeAttended: number; subjects: CheckpointSubject[] };
+
+export type OverallCheckpointInput = { asOf: string; overallBp: number; overallHeld?: number };
 
 export type SheetPreview = {
   registration: string;
@@ -410,7 +413,9 @@ export const createApi = (options: ApiOptions) => {
     previewImport: (id: number, text: string) => request<ImportPreview>('POST', `/timetables/${id}/calendar/import`, { text }),
     subjectHistory: (id: number, subjectId: number) => request<SubjectHistory>('GET', `/timetables/${id}/subjects/${subjectId}/history`),
     checkpoints: (id: number) => request<{ checkpoints: Checkpoint[] }>('GET', `/timetables/${id}/checkpoints`).then((result) => result.checkpoints),
-    saveCheckpoint: (id: number, input: CheckpointInput) =>
+    estimateHeld: (id: number, asOf: string) =>
+      request<{ estimate: { asOf: string; held: number } }>('GET', `/timetables/${id}/checkpoints/estimate?asOf=${asOf}`).then((result) => result.estimate.held),
+    saveCheckpoint: (id: number, input: CheckpointInput | OverallCheckpointInput) =>
       request<{ checkpoint: Checkpoint }>('POST', `/timetables/${id}/checkpoints`, input).then((result) => result.checkpoint),
     deleteCheckpoint: (id: number, checkpointId: number) => request<void>('DELETE', `/timetables/${id}/checkpoints/${checkpointId}`),
     readSheet: (id: number, registration: string, file: Blob | ArrayBuffer) =>

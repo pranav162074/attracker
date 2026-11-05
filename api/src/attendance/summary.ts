@@ -68,7 +68,7 @@ export const timetableSummary = async (userId: number, timetableId: number, asOf
     timetableId,
     status: timetable.tracking ? ('tracking' as const) : ('setup' as const),
     asOf: { date: result.asOf.date, time: result.asOf.minute >= 1440 ? '24:00' : toClock(result.asOf.minute) },
-    checkpoint: input.checkpoint ? { asOf: input.checkpoint.asOf } : null,
+    checkpoint: input.checkpoint ? { asOf: input.checkpoint.asOf, overallOnly: input.checkpoint.overallOnly === true } : null,
     overall: {
       ...tally(result.overall),
       zone: result.overall.zone,

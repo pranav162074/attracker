@@ -115,7 +115,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/timetables/{id}/summary` | Overall and per-subject attendance, zone, can miss, need, best possible (`?asOf=YYYY-MM-DD` for any date) |
 | GET | `/overview` | Every active timetable's headline number, for the home screen |
 | GET | `/today` | Today's classes from every timetable, in time order |
-| GET, POST | `/timetables/{id}/checkpoints` | List or save official numbers on a date (typed in, or confirmed from a sheet) |
+| GET, POST | `/timetables/{id}/checkpoints` | List or save official numbers on a date: per subject (typed in, or confirmed from a sheet), or one overall percentage (`{ asOf, overallBp, overallHeld? }`) |
+| GET | `/timetables/{id}/checkpoints/estimate?asOf=` | Classes held up to a date by the timetable, used to turn an overall percentage into counts |
 | POST | `/timetables/{id}/checkpoints/sheet?registration=` | Read the student's own row from the class attendance sheet (`.xls`/`.xlsx`) and preview it |
 | DELETE | `/timetables/{id}/checkpoints/{checkpointId}` | Remove a checkpoint |
 | GET | `/health` | Liveness, without touching the database |
@@ -171,7 +172,7 @@ For each day from the semester start:
 2. The weekly timetable in effect on that date supplies the classes; a half day removes those before or after its cutoff.
 3. A class counts once its start time has passed. It is attended unless marked absent, not held if marked cancelled, and held for another subject if substituted. Extra classes are added on top, even on holidays.
 4. A lab counts all its periods, a per-session subject counts one, and subjects that do not count for attendance count nothing.
-5. Up to the date of an official checkpoint, the sheet's numbers replace the computed ones, and its free hours are added to the overall total.
+5. Up to the date of an official checkpoint, the sheet's numbers replace the computed ones, and its free hours are added to the overall total. A checkpoint that gives only an overall percentage replaces every subject's classes up to that date: the percentage is turned into attended out of held, using the held count the student gives or else the classes the timetable held up to that date, and each subject is then counted from the next day only.
 
 Percentages are truncated to two decimals, never rounded, like college sheets. For each line (required and condonation) the engine gives how many periods can still be missed, how many must be attended in a row to get back above it, and whether that is still possible before the semester ends, together with the best percentage reachable by attending everything left. These are exact integer calculations, checked against a brute-force search for every case up to 60 periods.
 
@@ -193,6 +194,6 @@ Only rules and exceptions are stored; each individual class is worked out from t
 | `calendar_days` | holidays, breaks, half days, days that follow another weekday |
 | `class_marks` | absent, cancelled or substituted classes (present is the default and never stored) |
 | `extra_classes` | classes added outside the grid |
-| `checkpoints`, `checkpoint_subjects` | official held and attended numbers on a date |
+| `checkpoints`, `checkpoint_subjects` | official held and attended numbers on a date, per subject or as one overall percentage |
 
 The database enforces the rules itself: no two classes at overlapping times on the same day, one calendar rule per day, nothing pointing at another timetable's subjects or classes, never more attended than held, and a slot that still holds your marks cannot be deleted.

@@ -1,6 +1,7 @@
 import type { Line, Summary, SubjectTally, Tally } from './api.ts';
 import { formatDate } from './dates.ts';
 import { amount, classes } from './format.ts';
+import { shiftDay } from './day.ts';
 
 export const findLine = (tally: Pick<Tally, 'lines'>, name: Line['name']) => tally.lines.find((line) => line.name === name) ?? null;
 
@@ -25,12 +26,24 @@ export const outlookMessage = (tally: Pick<Tally, 'remaining' | 'bestText'>) => 
   return `${classes(tally.remaining)} left this term. Attending all of them takes you to ${tally.bestText}%.`;
 };
 
-export const sourceNote = (summary: Pick<Summary, 'checkpoint'>) =>
-  summary.checkpoint ? `Uses the official numbers up to ${formatDate(summary.checkpoint.asOf)}, then your own marks.` : null;
+export const sourceNote = (summary: Pick<Summary, 'checkpoint'>) => {
+  if (!summary.checkpoint) return null;
+  const date = formatDate(summary.checkpoint.asOf);
+  return summary.checkpoint.overallOnly ? `Uses the official overall percentage up to ${date}, then your own marks.` : `Uses the official numbers up to ${date}, then your own marks.`;
+};
 
-export const subjectCount = (row: Pick<SubjectTally, 'held' | 'attended' | 'unitsPerClass'>) => {
-  if (row.held === 0) return 'No classes yet';
-  return row.unitsPerClass > 1 ? `${row.attended} of ${row.held} periods` : `${row.attended} of ${row.held}`;
+export const subjectsFrom = (summary: Pick<Summary, 'checkpoint'>) => (summary.checkpoint?.overallOnly ? shiftDay(summary.checkpoint.asOf, 1) : null);
+
+export const subjectsNote = (summary: Pick<Summary, 'checkpoint'>) => {
+  const from = subjectsFrom(summary);
+  if (!from) return null;
+  return `The official numbers up to ${formatDate(summary.checkpoint!.asOf)} are for the overall only, so each subject counts from ${formatDate(from)}.`;
+};
+
+export const subjectCount = (row: Pick<SubjectTally, 'held' | 'attended' | 'unitsPerClass'>, since: string | null = null) => {
+  if (row.held === 0) return since ? `No classes since ${formatDate(since)} yet` : 'No classes yet';
+  const count = row.unitsPerClass > 1 ? `${row.attended} of ${row.held} periods` : `${row.attended} of ${row.held}`;
+  return since ? `Since ${formatDate(since)}: ${count}` : count;
 };
 
 export const subjectTone = (row: Pick<SubjectTally, 'held' | 'lines'>) => {
