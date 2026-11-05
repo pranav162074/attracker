@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canMiss, dayPlan, formatPercent, needToAttend, summarize } from '../src/index.ts';
+import { canMiss, dayPlan, formatPercent, heldUpTo, needToAttend, summarize } from '../src/index.ts';
 import type { EngineInput, LineResult } from '../src/index.ts';
 import { HOLIDAYS, S, semV, slotAt } from './fixtures/semV.ts';
 
@@ -229,5 +229,41 @@ describe('GVPCE Sem V, checked against the college sheet of 30 September', () =>
     const summary = summarize(semV({ checkpoint: official, calendar: [...HOLIDAYS, { kind: 'holiday', startsOn: '2026-09-28', endsOn: '2026-10-01' }] }));
     expect(summary.overall.held).toBe(246);
     expect(summary.overall.remaining).toBe(181 - 6);
+  });
+});
+
+describe('official numbers for the overall only', () => {
+  const overallOnly = { asOf: '2026-09-30', freeHeld: 246, freeAttended: 150, subjects: [], overallOnly: true };
+
+  it('use the overall numbers exactly up to the date, and nothing from the timetable before it', () => {
+    const summary = summarize(semV({ checkpoint: overallOnly }));
+    expect(summary.overall).toMatchObject({ held: 246, attended: 150 });
+    expect(formatPercent(summary.overall.percent)).toBe('60.97');
+    expect(summary.subjects.every((row) => row.held === 0 && row.attended === 0)).toBe(true);
+  });
+
+  it('add the student’s own marks after the date to the overall and to each subject from that day', () => {
+    const summary = summarize(
+      semV({
+        checkpoint: overallOnly,
+        now: { date: '2026-10-07', minute: 1440 },
+        marks: [
+          { slotId: slotAt(1, 720).id, onDate: '2026-10-05', attendance: 'absent', substituteSubjectId: null },
+          { slotId: slotAt(1, 720).id, onDate: '2026-09-28', attendance: 'absent', substituteSubjectId: null },
+        ],
+      })
+    );
+    const after = summary.subjects.reduce((sum, row) => sum + row.held, 0);
+    expect(summary.overall.held).toBe(246 + after);
+    expect(after).toBe(24);
+    expect(summary.overall.attended).toBe(150 + after - 1);
+    expect(subject(summary, S.DWDM)).toMatchObject({ held: 3, attended: 2 });
+  });
+
+  it('count the classes held up to a date from the timetable, labs by periods, without any checkpoint', () => {
+    expect(heldUpTo(tiny(), '2026-08-03')).toBe(4);
+    expect(heldUpTo(tiny(), '2026-08-04')).toBe(5);
+    expect(heldUpTo(tiny({ checkpoint: { asOf: '2026-08-04', freeHeld: 0, freeAttended: 0, subjects: [], overallOnly: true } }), '2026-08-04')).toBe(5);
+    expect(heldUpTo(tiny({ calendar: [{ kind: 'holiday', startsOn: '2026-08-03', endsOn: '2026-08-03', label: null }] }), '2026-08-04')).toBe(1);
   });
 });

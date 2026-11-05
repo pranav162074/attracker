@@ -46,6 +46,7 @@ export type Checkpoint = {
   freeHeld: number;
   freeAttended: number;
   subjects: Array<{ subjectId: number; held: number; attended: number }>;
+  overallOnly?: boolean;
 };
 
 export type Moment = { date: string; minute: number };
@@ -304,7 +305,7 @@ export const summarize = (input: EngineInput): Summary => {
       if (!occurrence.counts) continue;
       const entry = counts.get(occurrence.subjectId);
       if (!entry) continue;
-      if (occurrence.beforeCheckpoint && fromCheckpoint.has(occurrence.subjectId)) continue;
+      if (occurrence.beforeCheckpoint && (checkpoint?.overallOnly || fromCheckpoint.has(occurrence.subjectId))) continue;
       if (occurrence.status === 'attended') {
         entry.held += occurrence.units;
         entry.attended += occurrence.units;
@@ -342,3 +343,5 @@ export const summarize = (input: EngineInput): Summary => {
 
   return { asOf: input.now, overall: { ...overall, zone, freeHeld, freeAttended }, subjects };
 };
+
+export const heldUpTo = (input: EngineInput, date: string) => summarize({ ...input, checkpoint: null, now: { date, minute: 1440 } }).overall.held;

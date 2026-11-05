@@ -72,8 +72,8 @@ export const loadEngineInput = async (userId: number, timetableId: number, asOf?
       'SELECT id, subject_id, on_date, start_minute, end_minute, periods, attendance FROM extra_classes WHERE timetable_id = $1',
       [timetableId]
     ),
-    query<{ id: number; as_of: string; free_held: number; free_attended: number }>(
-      'SELECT id, as_of, free_held, free_attended FROM checkpoints WHERE timetable_id = $1 ORDER BY as_of DESC LIMIT 1',
+    query<{ id: number; as_of: string; free_held: number; free_attended: number; overall_bp: number | null }>(
+      'SELECT id, as_of, free_held, free_attended, overall_bp FROM checkpoints WHERE timetable_id = $1 ORDER BY as_of DESC LIMIT 1',
       [timetableId]
     ),
   ]);
@@ -90,6 +90,7 @@ export const loadEngineInput = async (userId: number, timetableId: number, asOf?
       freeHeld: latest.free_held,
       freeAttended: latest.free_attended,
       subjects: rows.map((row) => ({ subjectId: row.subject_id, held: row.held, attended: row.attended })),
+      overallOnly: latest.overall_bp !== null,
     };
   }
 

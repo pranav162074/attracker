@@ -86,7 +86,7 @@ describe.skipIf(skipWithoutDatabase)('the summary', () => {
     await addOfficialSheet(timetable.id, ids);
 
     const { summary } = (await user.get(`${base}/summary?asOf=2026-09-30`)).body;
-    expect(summary.checkpoint).toEqual({ asOf: '2026-09-30' });
+    expect(summary.checkpoint).toEqual({ asOf: '2026-09-30', overallOnly: false });
     expect(summary.overall).toMatchObject({
       held: 246,
       attended: 150,

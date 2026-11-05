@@ -2,7 +2,8 @@ import express from 'express';
 import { HttpError } from '../http/errors.ts';
 import { idParam } from '../http/params.ts';
 import { validateBody } from '../middleware/validate.ts';
-import { deleteCheckpoint, listCheckpoints, previewSheet, saveCheckpoint, saveCheckpointSchema } from '../checkpoints/repo.ts';
+import { deleteCheckpoint, estimateHeld, listCheckpoints, previewSheet, saveCheckpoint, saveCheckpointSchema } from '../checkpoints/repo.ts';
+import { isRealDate } from '@attracker/engine';
 import type { SaveCheckpoint } from '../checkpoints/repo.ts';
 
 export const checkpointRoutes = express.Router({ mergeParams: true });
@@ -11,6 +12,12 @@ const timetableId = (params: Record<string, unknown>) => idParam(params.timetabl
 
 checkpointRoutes.get('/', async (req, res) => {
   res.json({ checkpoints: await listCheckpoints(req.auth!.userId, timetableId(req.params)) });
+});
+
+checkpointRoutes.get('/estimate', async (req, res) => {
+  const asOf = typeof req.query.asOf === 'string' ? req.query.asOf : '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf) || !isRealDate(asOf)) throw new HttpError(400, 'validation_error', 'Give the date as ?asOf=YYYY-MM-DD');
+  res.json({ estimate: await estimateHeld(req.auth!.userId, timetableId(req.params), asOf) });
 });
 
 checkpointRoutes.post('/', validateBody(saveCheckpointSchema), async (req, res) => {

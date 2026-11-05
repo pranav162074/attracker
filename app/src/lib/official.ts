@@ -1,4 +1,4 @@
-import type { Checkpoint, CheckpointInput, FieldErrors, SheetPreview, Subject, Timetable } from './api.ts';
+import type { Checkpoint, CheckpointInput, FieldErrors, OverallCheckpointInput, SheetPreview, Subject, Timetable } from './api.ts';
 import { formatDate } from './dates.ts';
 
 export type CountPair = { held: string; attended: string };
@@ -29,6 +29,13 @@ export const formFromPreview = (preview: SheetPreview, subjects: Subject[]): Off
   return form;
 };
 
+const checkAsOf = (asOf: string | null, timetable: Pick<Timetable, 'startsOn' | 'endsOn'>, today: string) => {
+  if (!asOf) return 'Choose the date these numbers are up to';
+  if (asOf < timetable.startsOn || (timetable.endsOn && asOf > timetable.endsOn)) return 'Must be within the timetable’s dates';
+  if (asOf > today) return 'Cannot be later than today';
+  return null;
+};
+
 export const parseCount = (text: string): number | 'bad' | null => {
   const trimmed = text.trim();
   if (!trimmed) return null;
@@ -44,9 +51,8 @@ export const checkOfficial = (
   source: CheckpointInput['source']
 ): { input: CheckpointInput | null; errors: FieldErrors } => {
   const errors: FieldErrors = {};
-  if (!form.asOf) errors.asOf = 'Choose the date these numbers are up to';
-  else if (form.asOf < timetable.startsOn || (timetable.endsOn && form.asOf > timetable.endsOn)) errors.asOf = 'Must be within the timetable’s dates';
-  else if (form.asOf > today) errors.asOf = 'Cannot be later than today';
+  const dateProblem = checkAsOf(form.asOf, timetable, today);
+  if (dateProblem) errors.asOf = dateProblem;
 
   const rows: CheckpointInput['subjects'] = [];
   for (const subject of countedSubjects(subjects)) {
@@ -101,7 +107,43 @@ export const truncatedPercent = (attended: number, held: number) => {
   return `${Math.floor(hundredths / 100)}.${String(hundredths % 100).padStart(2, '0')}%`;
 };
 
-export const checkpointTitle = (checkpoint: Pick<Checkpoint, 'asOf' | 'source'>) =>
-  `Up to ${formatDate(checkpoint.asOf)}${checkpoint.source === 'sheet' ? ', from the class sheet' : ', typed in'}`;
+export const checkpointTitle = (checkpoint: Pick<Checkpoint, 'asOf' | 'source' | 'overallBp'>) =>
+  `Up to ${formatDate(checkpoint.asOf)}${checkpoint.overallBp !== null ? ', overall percentage' : checkpoint.source === 'sheet' ? ', from the class sheet' : ', typed in'}`;
+
+export type OverallForm = { asOf: string | null; percent: string; held: string };
+
+export const parseOverallPercent = (text: string): { bp: number | null; error: string | null } => {
+  const trimmed = text.trim().replace(/\s*%$/, '');
+  if (!trimmed) return { bp: null, error: 'Enter the overall percentage' };
+  const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(trimmed);
+  if (!match) return { bp: null, error: 'Enter a percentage like 70.24' };
+  const bp = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
+  if (bp > 10_000) return { bp: null, error: 'A percentage cannot be more than 100' };
+  return { bp, error: null };
+};
+
+export const formatBp = (bp: number) => `${Math.floor(bp / 100)}.${String(bp % 100).padStart(2, '0')}`;
+
+export const attendedFrom = (bp: number, held: number) => Math.round((held * bp) / 10_000);
+
+export const checkOverall = (
+  form: OverallForm,
+  timetable: Pick<Timetable, 'startsOn' | 'endsOn'>,
+  today: string
+): { input: OverallCheckpointInput | null; errors: FieldErrors } => {
+  const errors: FieldErrors = {};
+  const dateProblem = checkAsOf(form.asOf, timetable, today);
+  if (dateProblem) errors.asOf = dateProblem;
+  const { bp, error } = parseOverallPercent(form.percent);
+  if (error) errors.percent = error;
+  const held = parseCount(form.held);
+  if (held === 'bad') errors.held = 'Whole numbers only';
+  else if (held === 0) errors.held = 'Classes held must be at least 1';
+  if (Object.keys(errors).length > 0 || bp === null) return { input: null, errors };
+  return { input: { asOf: form.asOf!, overallBp: bp, ...(typeof held === 'number' ? { overallHeld: held } : {}) }, errors };
+};
+
+export const overallPreview = (bp: number, held: number, typed: boolean) =>
+  `${typed ? 'That' : `Your timetable has ${held} classes up to that day, so that`} is about ${attendedFrom(bp, held)} of ${held} classes attended.`;
 
 export const unusedSheetSubjects = (preview: SheetPreview) => preview.subjects.filter((entry) => entry.subjectId === null);

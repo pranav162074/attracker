@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../../session.tsx';
 import type { Checkpoint } from '../../../../../lib/api.ts';
 import { problemFrom } from '../../../../../lib/forms.ts';
-import { checkpointTitle, checkpointTotals, truncatedPercent } from '../../../../../lib/official.ts';
+import { checkpointTitle, checkpointTotals, formatBp, truncatedPercent } from '../../../../../lib/official.ts';
 import { useLoad } from '../../../../../useLoad.ts';
 import { Button } from '../../../../../ui/Button.tsx';
 import { ConfirmButton } from '../../../../../ui/ConfirmButton.tsx';
@@ -20,15 +20,21 @@ const Saved = ({ checkpoint, latest, names, onDelete }: { checkpoint: Checkpoint
         <Text style={styles.cardTitle}>{checkpointTitle(checkpoint)}</Text>
         {latest ? <Text style={styles.inUse}>In use</Text> : null}
       </View>
-      <Text style={styles.cardTotal}>
-        {totals.attended} of {totals.held} attended{truncatedPercent(totals.attended, totals.held) ? `, ${truncatedPercent(totals.attended, totals.held)}` : ''}
-      </Text>
+      {checkpoint.overallBp !== null ? (
+        <Text style={styles.cardTotal}>
+          {formatBp(checkpoint.overallBp)}% overall, counted as {totals.attended} of {totals.held} classes
+        </Text>
+      ) : (
+        <Text style={styles.cardTotal}>
+          {totals.attended} of {totals.held} attended{truncatedPercent(totals.attended, totals.held) ? `, ${truncatedPercent(totals.attended, totals.held)}` : ''}
+        </Text>
+      )}
       {checkpoint.subjects.map((row) => (
         <Text key={row.subjectId} style={styles.cardLine}>
           {names.get(row.subjectId) ?? 'Subject'}: {row.attended} of {row.held}
         </Text>
       ))}
-      {checkpoint.freeHeld > 0 ? (
+      {checkpoint.freeHeld > 0 && checkpoint.overallBp === null ? (
         <Text style={styles.cardLine}>
           Other hours: {checkpoint.freeAttended} of {checkpoint.freeHeld}
         </Text>
@@ -67,6 +73,7 @@ export default function OfficialNumbers() {
       <View style={styles.actions}>
         <Button title="Read from the class attendance sheet" onPress={() => router.push(`${base}/sheet`)} />
         <Button title="Type the numbers in" variant="secondary" onPress={() => router.push(`${base}/new`)} />
+        <Button title="I only know the overall percentage" variant="secondary" onPress={() => router.push(`${base}/overall`)} />
       </View>
       <ErrorNotice message={message} />
       <SectionTitle>Saved</SectionTitle>
