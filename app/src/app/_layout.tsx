@@ -18,10 +18,11 @@ const RootNavigator = () => {
   const signedIn = state.status === 'signedIn';
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={signedIn} redirectTo="/welcome">
         <Stack.Screen name="(app)" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
+        <Stack.Screen name="welcome" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
         <Stack.Screen name="forgot" />
