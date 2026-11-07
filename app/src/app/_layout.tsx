@@ -23,6 +23,7 @@ const RootNavigator = () => {
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" />
+        <Stack.Screen name="features" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
         <Stack.Screen name="forgot" />

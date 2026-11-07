@@ -98,7 +98,7 @@ export const ReminderSettings = () => {
 };
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space.xxl, borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: space.xl },
+  wrap: {},
   title: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: space.md },
   time: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   timeField: { flex: 1 },

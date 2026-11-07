@@ -38,7 +38,7 @@ export const parsePercent = (text: string): { value: number | null; error: strin
 export const checkTimetableForm = (form: TimetableForm): { input: TimetableInput | null; errors: FieldErrors } => {
   const errors: FieldErrors = {};
   const name = form.name.trim();
-  if (!name) errors.name = 'Give the timetable a name';
+  if (!name) errors.name = 'Give the semester a name';
   else if (name.length > 60) errors.name = 'Name must be at most 60 characters';
   if (!form.startsOn) errors.startsOn = 'Choose the first day of classes';
   if (form.startsOn && form.endsOn && form.endsOn < form.startsOn) errors.endsOn = 'The last day must be on or after the first day';
@@ -136,4 +136,4 @@ export const subjectNote = (subject: Pick<Subject, 'kind' | 'countsAttendance' |
   return parts.join(' · ');
 };
 
-export const STEP_TITLES = { dates: 'Dates and attendance rules', subjects: 'Subjects', grid: 'Weekly timetable', holidays: 'Holidays and special days', official: 'Official numbers' } as const;
+export const STEP_TITLES = { dates: 'Semester dates and rules', subjects: 'Subjects', grid: 'Weekly timetable', holidays: 'Holidays and special days', official: 'Attendance from college' } as const;

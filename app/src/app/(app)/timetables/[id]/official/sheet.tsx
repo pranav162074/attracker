@@ -8,6 +8,7 @@ import { problemFrom } from '../../../../../lib/forms.ts';
 import { formFromPreview, truncatedPercent, unusedSheetSubjects } from '../../../../../lib/official.ts';
 import { prefs } from '../../../../../prefs';
 import { OfficialEditor } from '../../../../../screens/OfficialEditor.tsx';
+import { isSetup } from '../../../../../setupFlow.ts';
 import { useLoad } from '../../../../../useLoad.ts';
 import { Button } from '../../../../../ui/Button.tsx';
 import { ErrorNotice } from '../../../../../ui/Notice.tsx';
@@ -61,7 +62,7 @@ const Found = ({ preview, names }: { preview: SheetPreview; names: Map<number, s
 };
 
 export default function ReadSheet() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, setup } = useLocalSearchParams<{ id: string; setup?: string }>();
   const timetableId = Number(id);
   const load = useCallback(() => loadAll(timetableId), [timetableId]);
   const { data, error, loading, refreshing, refresh } = useLoad(load);
@@ -116,7 +117,7 @@ export default function ReadSheet() {
   if (preview) {
     return (
       <Page>
-        <OfficialEditor timetable={data.timetable} subjects={data.subjects} initial={formFromPreview(preview, data.subjects)} source="sheet">
+        <OfficialEditor timetable={data.timetable} subjects={data.subjects} initial={formFromPreview(preview, data.subjects)} source="sheet" setup={isSetup(setup)}>
           <Found preview={preview} names={names} />
           <Muted>Check the numbers below against the sheet, choose the date it covers, and save. Only your own row was read.</Muted>
         </OfficialEditor>

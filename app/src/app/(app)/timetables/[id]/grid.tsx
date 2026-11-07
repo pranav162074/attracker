@@ -17,6 +17,10 @@ import { DateField } from '../../../../ui/DateField.tsx';
 import { ErrorNotice } from '../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page } from '../../../../ui/Page.tsx';
 import { colors, space } from '../../../../ui/theme.ts';
+import { setupPath } from '../../../../lib/semester.ts';
+import { SetupIntro, SetupProgress } from '../../../../screens/SetupFrame.tsx';
+import { WeekOverview } from '../../../../screens/WeekOverview.tsx';
+import { isSetup } from '../../../../setupFlow.ts';
 
 type Loaded = { timetable: Timetable; subjects: Subject[]; grid: Grid };
 
@@ -32,7 +36,7 @@ const loadAll = async (id: number): Promise<Loaded> => {
   return { timetable, subjects, grid };
 };
 
-const Editor = ({ timetable, subjects, grid }: Loaded) => {
+const Editor = ({ timetable, subjects, grid, setup }: Loaded & { setup: boolean }) => {
   const router = useRouter();
   const [saved] = useState(() => fromServer(grid.slots));
   const [draft, setDraft] = useState<DraftSlot[]>(saved);
@@ -62,7 +66,8 @@ const Editor = ({ timetable, subjects, grid }: Loaded) => {
     setMessage(null);
     try {
       await api.saveGrid(timetable.id, { effectiveFrom: from, slots: toServer(draft), discardMarks });
-      router.back();
+      if (setup) router.replace(setupPath(timetable.id, 'calendar'));
+      else router.back();
     } catch (error) {
       setBusy(false);
       if (error instanceof ApiError && error.code === 'marks_would_be_lost') {
@@ -77,13 +82,24 @@ const Editor = ({ timetable, subjects, grid }: Loaded) => {
     return (
       <Page>
         <Muted>Add your subjects first. Then come back here to put them into the week.</Muted>
-        <Button title="Add subjects" onPress={() => router.replace(`/timetables/${timetable.id}/subjects`)} />
+        <Button title="Add subjects" onPress={() => router.replace(setup ? setupPath(timetable.id, 'subjects') : `/timetables/${timetable.id}/subjects`)} />
       </Page>
     );
   }
 
   return (
     <Page>
+      {setup ? <SetupProgress route="grid" /> : null}
+      {setup ? <SetupIntro title="Weekly timetable">Enter one normal week. Tap a slot in the week view, or pick a day below and add its classes.</SetupIntro> : null}
+      <WeekOverview
+        draft={draft}
+        days={days}
+        subjects={byId}
+        onOpen={(day, slot) => {
+          setWeekday(day);
+          setEditing({ slot });
+        }}
+      />
       <Muted>
         {tracking
           ? 'Changes apply from the date you choose. Earlier weeks keep the old timetable, so your past attendance stays as it was.'
@@ -150,7 +166,19 @@ const Editor = ({ timetable, subjects, grid }: Loaded) => {
             </View>
           </View>
         ) : (
-          <Button title={tracking ? `Save from ${from ? formatDate(from) : '…'}` : 'Save timetable'} onPress={() => save(false)} busy={busy} disabled={archived.length > 0 || (!changed && grid.version !== null)} />
+          <>
+            {setup && !changed && grid.version !== null ? (
+              <Button title="Next" onPress={() => router.replace(setupPath(timetable.id, 'calendar'))} />
+            ) : (
+              <Button
+                title={setup ? 'Save and continue' : tracking ? `Save from ${from ? formatDate(from) : '…'}` : 'Save timetable'}
+                onPress={() => save(false)}
+                busy={busy}
+                disabled={archived.length > 0 || (!changed && grid.version !== null)}
+              />
+            )}
+            {setup ? <Button title="Back" variant="secondary" onPress={() => router.replace(setupPath(timetable.id, 'subjects'))} /> : null}
+          </>
         )}
         <Text style={styles.total}>
           {draft.length} {draft.length === 1 ? 'class' : 'classes'} a week{changed ? ', not saved yet' : ''}
@@ -208,13 +236,13 @@ const Editor = ({ timetable, subjects, grid }: Loaded) => {
 };
 
 export default function GridScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, setup } = useLocalSearchParams<{ id: string; setup?: string }>();
   const timetableId = Number(id);
   const load = useCallback(() => loadAll(timetableId), [timetableId]);
   const { data, error, loading, refreshing, refresh } = useLoad(load);
   if (loading) return <Loading />;
   if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
-  return <Editor {...data} />;
+  return <Editor {...data} setup={isSetup(setup)} />;
 }
 
 const styles = StyleSheet.create({
@@ -228,7 +256,7 @@ const styles = StyleSheet.create({
   link: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   dayTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: space.lg, marginBottom: space.md },
   dayActions: { gap: space.md, marginTop: space.md },
-  saveArea: { marginTop: space.xxl, borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: space.xl },
+  saveArea: { marginTop: space.xxl, borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: space.xl, gap: space.md },
   lost: { borderWidth: 1, borderColor: colors.error, borderRadius: 8, padding: space.lg, backgroundColor: colors.errorBackground, gap: space.md },
   lostText: { fontSize: 15, color: colors.text, lineHeight: 21 },
   lostActions: { gap: space.md },

@@ -57,7 +57,7 @@ export const zoneBadge = (zone: Zone): { label: string; tone: Tone } | null => {
 };
 
 export const overviewLine = (item: OverviewItem) => {
-  if (item.status === 'setup') return 'Setup is not finished yet. Tracking starts when you press Start Tracking.';
+  if (item.status === 'setup') return 'Setup is not finished yet. Tracking starts when you press Start tracking.';
   if (item.held === 0) return 'No classes have been held yet.';
   return `${item.attended} of ${item.held} attended`;
 };

@@ -44,6 +44,17 @@ npm run app
 
 To point the app at another API, set `EXPO_PUBLIC_API_URL`, for example `EXPO_PUBLIC_API_URL=https://attracker.example.workers.dev/api`.
 
+### How the app is laid out
+
+Visitors who are not logged in see the welcome page, a page listing what attracker does, and the log in, sign up and password reset forms. After logging in there are four tabs, all for the semester picked in the switcher at the top (a "semester" is a timetable in the API):
+
+- **Today:** the overall percentage and what it means, notices (how marking works, days before tracking started, the last class day nobody checked), and today's classes with Present, Absent and Cancelled buttons. More covers a different subject being taught and extra classes.
+- **Subjects:** each subject's percentage, the ones needing attention first, and what each one needs.
+- **Calendar:** the month, tapping a day to mark it or turn it into a holiday.
+- **Settings:** the semester's dates and rules, subjects, weekly timetable, holidays, attendance from college, reminders, the account, adding a semester and deleting this one.
+
+A new semester is set up in five steps with Back and Next: dates and rules, subjects, the weekly timetable (with a week-at-a-glance grid), holidays, and whether classes have already started, which leads to entering the college's attendance from the sheet, per subject or as an overall percentage before tracking starts.
+
 ## Deploying
 
 ```
@@ -113,7 +124,7 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | POST | `/timetables/{id}/days/{date}/extra` | Add an extra class |
 | PATCH, DELETE | `/timetables/{id}/extra/{extraId}` | Change or remove an extra class |
 | GET | `/timetables/{id}/summary` | Overall and per-subject attendance, zone, can miss, need, best possible (`?asOf=YYYY-MM-DD` for any date) |
-| GET | `/overview` | Every active timetable's headline number, for the home screen |
+| GET | `/overview` | Every active timetable's headline number, for the semester switcher |
 | GET | `/today` | Today's classes from every timetable, in time order |
 | GET, POST | `/timetables/{id}/checkpoints` | List or save official numbers on a date: per subject (typed in, or confirmed from a sheet), or one overall percentage (`{ asOf, overallBp, overallHeld? }`) |
 | GET | `/timetables/{id}/checkpoints/estimate?asOf=` | Classes held up to a date by the timetable, used to turn an overall percentage into counts |

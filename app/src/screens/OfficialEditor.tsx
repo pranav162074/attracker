@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../session.tsx';
+import { startAndOpen } from '../setupFlow.ts';
 import type { CheckpointInput, FieldErrors, Subject, Timetable } from '../lib/api.ts';
 import { friendlyDates } from '../lib/dates.ts';
 import { localDate } from '../lib/format.ts';
@@ -21,6 +22,7 @@ type Props = {
   subjects: Subject[];
   initial: OfficialForm;
   source: CheckpointInput['source'];
+  setup?: boolean;
   children?: ReactNode;
 };
 
@@ -53,7 +55,7 @@ const Row = ({ title, colour, pair, error, onChange }: { title: string; colour: 
   </View>
 );
 
-export const OfficialEditor = ({ timetable, subjects, initial, source, children }: Props) => {
+export const OfficialEditor = ({ timetable, subjects, initial, source, setup = false, children }: Props) => {
   const router = useRouter();
   const [form, setForm] = useState<OfficialForm>(initial);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -71,7 +73,8 @@ export const OfficialEditor = ({ timetable, subjects, initial, source, children 
     setBusy(true);
     try {
       await api.saveCheckpoint(timetable.id, input);
-      router.dismissTo(`/timetables/${timetable.id}`);
+      if (setup) await startAndOpen(timetable.id);
+      else router.dismissTo('/');
     } catch (error) {
       const problem = problemFrom(error);
       setMessage(problem.message ? friendlyDates(problem.message) : 'Could not save.');
@@ -123,7 +126,7 @@ export const OfficialEditor = ({ timetable, subjects, initial, source, children 
         Total: {totals.attended} of {totals.held} attended{percent ? `, ${percent}` : ''}
       </Text>
       <ErrorNotice message={message} />
-      <Button title="Save official numbers" onPress={save} busy={busy} />
+      <Button title={setup ? 'Save and start tracking' : 'Save'} onPress={save} busy={busy} />
     </>
   );
 };

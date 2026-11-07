@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../../session.tsx';
+import { isSetup, startAndOpen } from '../../../../../setupFlow.ts';
 import type { FieldErrors, Timetable } from '../../../../../lib/api.ts';
 import { friendlyDates } from '../../../../../lib/dates.ts';
 import { localDate } from '../../../../../lib/format.ts';
@@ -16,7 +17,7 @@ import { LoadFailed, Loading, Muted, Page } from '../../../../../ui/Page.tsx';
 import { TextField } from '../../../../../ui/TextField.tsx';
 import { colors, space } from '../../../../../ui/theme.ts';
 
-const Editor = ({ timetable }: { timetable: Timetable }) => {
+const Editor = ({ timetable, setup }: { timetable: Timetable; setup: boolean }) => {
   const router = useRouter();
   const today = localDate();
   const [form, setForm] = useState<OverallForm>({ asOf: null, percent: '', held: '' });
@@ -54,7 +55,8 @@ const Editor = ({ timetable }: { timetable: Timetable }) => {
     setBusy(true);
     try {
       await api.saveCheckpoint(timetable.id, input);
-      router.dismissTo(`/timetables/${timetable.id}`);
+      if (setup) await startAndOpen(timetable.id);
+      else router.dismissTo('/');
     } catch (error) {
       const problem = problemFrom(error);
       setErrors(problem.fields);
@@ -102,13 +104,13 @@ const Editor = ({ timetable }: { timetable: Timetable }) => {
           <Text style={styles.previewText}>{preview}</Text>
         </View>
       ) : null}
-      <Button title="Save" onPress={save} busy={busy} />
+      <Button title={setup ? 'Save and start tracking' : 'Save'} onPress={save} busy={busy} />
     </>
   );
 };
 
 export default function OverallOfficialNumbers() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, setup } = useLocalSearchParams<{ id: string; setup?: string }>();
   const timetableId = Number(id);
   const load = useCallback(() => api.timetable(timetableId), [timetableId]);
   const { data, error, loading, refreshing, refresh } = useLoad(load);
@@ -116,7 +118,7 @@ export default function OverallOfficialNumbers() {
   if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
   return (
     <Page>
-      <Editor timetable={data} />
+      <Editor timetable={data} setup={isSetup(setup)} />
     </Page>
   );
 }

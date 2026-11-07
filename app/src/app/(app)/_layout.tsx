@@ -13,17 +13,19 @@ export default function SignedInLayout() {
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'attracker' }} />
       <Stack.Screen name="account" options={{ title: 'Account' }} />
-      <Stack.Screen name="timetables/new" options={{ title: 'New timetable' }} />
-      <Stack.Screen name="timetables/[id]/index" options={{ title: 'Timetable' }} />
-      <Stack.Screen name="timetables/[id]/details" options={{ title: 'Dates and rules' }} />
+      <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
+      <Stack.Screen name="timetables/new" options={{ title: 'New semester' }} />
+      <Stack.Screen name="timetables/[id]/index" options={{ title: 'Semester' }} />
+      <Stack.Screen name="timetables/[id]/details" options={{ title: 'Semester' }} />
+      <Stack.Screen name="timetables/[id]/started" options={{ title: 'New semester' }} />
       <Stack.Screen name="timetables/[id]/subject/[subjectId]" options={{ title: 'Subject' }} />
-      <Stack.Screen name="timetables/[id]/official/index" options={{ title: 'Official numbers' }} />
-      <Stack.Screen name="timetables/[id]/official/new" options={{ title: 'Type in official numbers' }} />
-      <Stack.Screen name="timetables/[id]/official/sheet" options={{ title: 'Read the class sheet' }} />
+      <Stack.Screen name="timetables/[id]/official/index" options={{ title: 'Attendance from college' }} />
+      <Stack.Screen name="timetables/[id]/official/new" options={{ title: 'Type in per subject' }} />
+      <Stack.Screen name="timetables/[id]/official/sheet" options={{ title: 'From the attendance sheet' }} />
       <Stack.Screen name="timetables/[id]/official/overall" options={{ title: 'Overall percentage' }} />
-      <Stack.Screen name="timetables/[id]/month" options={{ title: 'Month' }} />
+      <Stack.Screen name="timetables/[id]/month" options={{ title: 'Calendar' }} />
       <Stack.Screen name="timetables/[id]/days/[date]" options={{ title: 'Day' }} />
       <Stack.Screen name="timetables/[id]/grid" options={{ title: 'Weekly timetable' }} />
       <Stack.Screen name="timetables/[id]/subjects/index" options={{ title: 'Subjects' }} />

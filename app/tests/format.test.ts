@@ -78,7 +78,7 @@ describe('timetable cards', () => {
   it('describes the numbers, an unstarted term, and an unfinished setup', () => {
     expect(overviewLine(item({}))).toBe('150 of 246 attended');
     expect(overviewLine(item({ held: 0, attended: 0 }))).toBe('No classes have been held yet.');
-    expect(overviewLine(item({ status: 'setup' }))).toMatch(/Start Tracking/);
+    expect(overviewLine(item({ status: 'setup' }))).toMatch(/Start tracking/);
   });
 });
 

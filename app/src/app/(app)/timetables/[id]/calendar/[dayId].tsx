@@ -7,7 +7,7 @@ import type { CalendarDay, FieldErrors, Timetable } from '../../../../../lib/api
 import { checkDayForm, dayFormFrom, newDayForm } from '../../../../../lib/calendar.ts';
 import type { DayForm, DayType, HalfKind } from '../../../../../lib/calendar.ts';
 import { problemFrom } from '../../../../../lib/forms.ts';
-import { friendlyDates } from '../../../../../lib/dates.ts';
+import { friendlyDates, isRealIso } from '../../../../../lib/dates.ts';
 import { localDate } from '../../../../../lib/format.ts';
 import { parseTime, showTime, WEEKDAY_SHORT } from '../../../../../lib/grid.ts';
 import { useLoad } from '../../../../../useLoad.ts';
@@ -33,9 +33,9 @@ const HALVES: { value: HalfKind; label: string }[] = [
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6].map((day) => ({ value: String(day), label: WEEKDAY_SHORT[day - 1]! }));
 
-const Editor = ({ timetable, day }: { timetable: Timetable; day: CalendarDay | null }) => {
+const Editor = ({ timetable, day, date }: { timetable: Timetable; day: CalendarDay | null; date: string | null }) => {
   const router = useRouter();
-  const [form, setForm] = useState<DayForm>(() => (day ? dayFormFrom(day) : newDayForm()));
+  const [form, setForm] = useState<DayForm>(() => (day ? dayFormFrom(day) : { ...newDayForm(), startsOn: date, endsOn: date }));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -138,14 +138,14 @@ const loadExisting = async (timetableId: number, dayId: number | null) => {
 };
 
 export default function DayScreen() {
-  const { id, dayId } = useLocalSearchParams<{ id: string; dayId: string }>();
+  const { id, dayId, date } = useLocalSearchParams<{ id: string; dayId: string; date?: string }>();
   const timetableId = Number(id);
   const existing = dayId === 'new' ? null : Number(dayId);
   const load = useCallback(() => loadExisting(timetableId, existing), [timetableId, existing]);
   const { data, error, loading, refreshing, refresh } = useLoad(load);
   if (loading) return <Loading />;
   if (!data) return <LoadFailed message={error} onRetry={refresh} busy={refreshing} />;
-  return <Editor timetable={data.timetable} day={data.day} />;
+  return <Editor timetable={data.timetable} day={data.day} date={typeof date === 'string' && isRealIso(date) ? date : null} />;
 }
 
 const styles = StyleSheet.create({

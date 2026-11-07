@@ -9,6 +9,7 @@ export const colors = {
   disabled: '#9aa4b2',
   error: '#b3261e',
   errorBackground: '#fdecea',
+  infoBackground: '#e8f0fb',
 };
 
 export const tones = {
