@@ -32,7 +32,7 @@ describe('the timetable form', () => {
   });
 
   it('asks for a name and a first day', () => {
-    expect(checkTimetableForm(newTimetableForm()).errors).toEqual({ name: 'Give the timetable a name', startsOn: 'Choose the first day of classes' });
+    expect(checkTimetableForm(newTimetableForm()).errors).toEqual({ name: 'Give the semester a name', startsOn: 'Choose the first day of classes' });
     expect(checkTimetableForm({ ...filled, name: 'x'.repeat(61) }).errors.name).toBe('Name must be at most 60 characters');
   });
 

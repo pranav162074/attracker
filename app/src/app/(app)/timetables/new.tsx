@@ -9,6 +9,9 @@ import { TimetableFields } from '../../../screens/TimetableFields.tsx';
 import { Button } from '../../../ui/Button.tsx';
 import { ErrorNotice } from '../../../ui/Notice.tsx';
 import { Page } from '../../../ui/Page.tsx';
+import { chooseSemester } from '../../../currentSemester.ts';
+import { setupPath } from '../../../lib/semester.ts';
+import { SetupIntro, SetupProgress } from '../../../screens/SetupFrame.tsx';
 
 export default function NewTimetable() {
   const router = useRouter();
@@ -25,7 +28,8 @@ export default function NewTimetable() {
     setBusy(true);
     try {
       const timetable = await api.createTimetable({ ...input, timeZone: deviceTimeZone() });
-      router.replace(`/timetables/${timetable.id}`);
+      await chooseSemester(timetable.id);
+      router.replace(setupPath(timetable.id, 'subjects'));
     } catch (error) {
       const problem = problemFrom(error);
       setErrors(problem.fields);
@@ -36,9 +40,11 @@ export default function NewTimetable() {
 
   return (
     <Page>
+      <SetupProgress route="details" />
+      <SetupIntro title="Your semester">The days classes run, and your college’s attendance rule.</SetupIntro>
       <ErrorNotice message={message} />
       <TimetableFields form={form} errors={errors} onChange={setForm} />
-      <Button title="Create timetable" onPress={save} busy={busy} />
+      <Button title="Next" onPress={save} busy={busy} />
     </Page>
   );
 }

@@ -5,7 +5,6 @@ import { api, useSession } from '../../session.tsx';
 import { problemFrom } from '../../lib/forms.ts';
 import { Button } from '../../ui/Button.tsx';
 import { stopReminders } from '../../reminderSync.ts';
-import { ReminderSettings } from '../../screens/ReminderSettings.tsx';
 import { ErrorNotice } from '../../ui/Notice.tsx';
 import { colors, space } from '../../ui/theme.ts';
 
@@ -45,7 +44,6 @@ export default function Account() {
           <Button title="Log out on all devices" variant="secondary" onPress={everywhere} busy={busy === 'everywhere'} disabled={busy !== null} />
         </View>
         <Text style={styles.note}>Logging out on all devices also logs out this phone or browser.</Text>
-        <ReminderSettings />
       </ScrollView>
     </SafeAreaView>
   );

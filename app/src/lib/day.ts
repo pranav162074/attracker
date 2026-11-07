@@ -37,11 +37,11 @@ export const dayTitle = (date: string, today: string) => {
 
 export const dayNotes = (day: Day) => {
   const notes: string[] = [];
-  if (day.kind === 'outside') notes.push('This day is outside the timetable’s dates.');
+  if (day.kind === 'outside') notes.push('This day is outside the semester’s dates.');
   if (day.kind === 'holiday') notes.push(day.label ? `Holiday: ${day.label}. No regular classes.` : 'Holiday. No regular classes.');
   if (day.kind === 'follows_weekday' && day.followsWeekday) notes.push(`Runs ${WEEKDAY_NAMES[day.followsWeekday - 1]}’s timetable${day.label ? ` (${day.label})` : ''}.`);
   if (day.kind === 'half_day') notes.push(day.label ? `Half day: ${day.label}.` : 'Half day.');
-  if (!day.tracking) notes.push('Press Start Tracking on the timetable before marking attendance.');
+  if (!day.tracking) notes.push('Finish setting up this semester and press Start tracking before marking attendance.');
   if (day.classes.some((item) => item.beforeCheckpoint)) {
     notes.push('The official numbers you entered already cover this day, so changes here do not change your percentages.');
   }

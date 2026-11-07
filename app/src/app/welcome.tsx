@@ -5,19 +5,6 @@ import { Badge } from '../ui/Badge.tsx';
 import { Button } from '../ui/Button.tsx';
 import { colors, space, tones } from '../ui/theme.ts';
 
-const STEPS = [
-  { title: 'Add your timetable', body: 'Your subjects, the weekly timetable and holidays. Takes about ten minutes, once a semester.' },
-  { title: 'Mark only what changes', body: 'Every class counts as attended. Mark the ones you miss, the ones that get cancelled, and swaps.' },
-  { title: 'Know where you stand', body: 'Your overall and per-subject percentage, how many classes you can still miss, and how many you need to attend.' },
-];
-
-const DETAILS = [
-  { title: 'Counts like your college', body: 'Labs count by periods, percentages are cut at two decimals like the official sheet, and the condonation band (65% to 75%) is shown separately.' },
-  { title: 'Start any time in the semester', body: 'Enter the attendance the college last gave you, per subject or just the overall percentage, and carry on from there.' },
-  { title: 'Holidays and odd days', body: 'Holidays, half days, a Saturday that runs Monday’s timetable, and extra classes are all handled.' },
-  { title: 'Works without internet', body: 'The app shows what it last loaded and saves your marks until you are back online. The Android app can remind you each evening.' },
-];
-
 const Example = () => (
   <View style={styles.example} aria-label="Example of what attracker shows">
     <View style={styles.exampleTop}>
@@ -60,7 +47,7 @@ export default function Welcome() {
           <Text style={styles.title} role="heading">
             Know where your attendance stands
           </Text>
-          <Text style={styles.lead}>attracker keeps count of your classes against your college’s attendance rule, so you know how many you can miss before it becomes a problem.</Text>
+          <Text style={styles.lead}>attracker counts your classes against your college’s attendance rule, so you always know how many you can miss.</Text>
           <View style={styles.actions}>
             <Button title="Create an account" onPress={() => router.push('/signup')} />
             <Button title="Log in" variant="secondary" onPress={() => router.push('/login')} />
@@ -68,33 +55,9 @@ export default function Welcome() {
 
           <Example />
 
-          <Text style={styles.section} role="heading">
-            How it works
-          </Text>
-          {STEPS.map((step, index) => (
-            <View key={step.title} style={styles.step}>
-              <Text style={styles.stepNumber}>{index + 1}</Text>
-              <View style={styles.stepText}>
-                <Text style={styles.itemTitle}>{step.title}</Text>
-                <Text style={styles.itemBody}>{step.body}</Text>
-              </View>
-            </View>
-          ))}
-
-          <Text style={styles.section} role="heading">
-            Made for how colleges count
-          </Text>
-          {DETAILS.map((detail) => (
-            <View key={detail.title} style={styles.detail}>
-              <Text style={styles.itemTitle}>{detail.title}</Text>
-              <Text style={styles.itemBody}>{detail.body}</Text>
-            </View>
-          ))}
-
-          <View style={styles.end}>
-            <Text style={styles.endText}>Free to use. Your attendance is visible only to you.</Text>
-            <Button title="Create an account" onPress={() => router.push('/signup')} />
-          </View>
+          <Link href="/features" style={styles.more}>
+            See everything attracker does →
+          </Link>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -122,13 +85,5 @@ const styles = StyleSheet.create({
   exampleLast: { borderBottomWidth: 0, paddingBottom: 0 },
   exampleSubject: { fontSize: 15, color: colors.text },
   exampleValue: { fontSize: 15, fontWeight: '600' },
-  section: { fontSize: 20, fontWeight: '600', color: colors.text, marginTop: space.xxl, marginBottom: space.lg },
-  step: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
-  stepNumber: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border, textAlign: 'center', lineHeight: 26, fontSize: 14, color: colors.muted },
-  stepText: { flex: 1 },
-  detail: { marginBottom: space.lg },
-  itemTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 2 },
-  itemBody: { fontSize: 15, color: colors.muted, lineHeight: 22 },
-  end: { marginTop: space.xl, paddingTop: space.xl, borderTopWidth: 1, borderTopColor: colors.border, gap: space.md },
-  endText: { fontSize: 15, color: colors.muted },
+  more: { alignSelf: 'center', marginTop: space.xl, fontSize: 15, fontWeight: '600', color: colors.primary },
 });

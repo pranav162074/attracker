@@ -25,6 +25,18 @@ export const Page = ({ children, refreshing, onRefresh }: Props) => (
   </SafeAreaView>
 );
 
+export const TabPage = ({ children, refreshing, onRefresh }: Props) => (
+  <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <ScrollView
+      contentContainerStyle={styles.tabBody}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={onRefresh ? <RefreshControl refreshing={refreshing ?? false} onRefresh={onRefresh} /> : undefined}
+    >
+      {children}
+    </ScrollView>
+  </SafeAreaView>
+);
+
 export const Loading = () => (
   <View style={styles.center}>
     <ActivityIndicator color={colors.primary} />
@@ -50,6 +62,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   fill: { flex: 1 },
   body: { padding: space.xl, paddingBottom: space.xxl * 2, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  tabBody: { padding: space.xl, paddingBottom: space.xxl, width: '100%', maxWidth: 640, alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   failed: { flex: 1, padding: space.xl, backgroundColor: colors.background },
   section: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: space.md },

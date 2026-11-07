@@ -77,8 +77,8 @@ describe('the day', () => {
     expect(dayNotes(day({ kind: 'holiday', label: 'Diwali' }))).toEqual(['Holiday: Diwali. No regular classes.']);
     expect(dayNotes(day({ kind: 'follows_weekday', followsWeekday: 1, label: 'Instead of 2 Oct' }))).toEqual(['Runs Monday’s timetable (Instead of 2 Oct).']);
     expect(dayNotes(day({ kind: 'half_day' }))).toEqual(['Half day.']);
-    expect(dayNotes(day({ kind: 'outside' }))).toEqual(['This day is outside the timetable’s dates.']);
-    expect(dayNotes(day({ tracking: false }))).toEqual(['Press Start Tracking on the timetable before marking attendance.']);
+    expect(dayNotes(day({ kind: 'outside' }))).toEqual(['This day is outside the semester’s dates.']);
+    expect(dayNotes(day({ tracking: false }))).toEqual(['Finish setting up this semester and press Start tracking before marking attendance.']);
     expect(dayNotes(day({ classes: [cls({ beforeCheckpoint: true })] }))[0]).toMatch(/official numbers/);
     expect(dayNotes(day({}))).toEqual([]);
   });

@@ -19,7 +19,7 @@ export const TimetableFields = ({ form, errors, onChange }: Props) => {
         value={form.name}
         onChangeText={(value) => set('name', value)}
         error={errors.name}
-        placeholder="College, Sem V"
+        placeholder="Sem 5"
         maxLength={60}
         autoCapitalize="sentences"
       />
@@ -35,7 +35,7 @@ export const TimetableFields = ({ form, errors, onChange }: Props) => {
       />
 
       <SectionTitle>Attendance rules</SectionTitle>
-      <Muted>Leave these empty if this timetable has no minimum attendance.</Muted>
+      <Muted>Leave these empty if there is no minimum attendance.</Muted>
       <TextField
         label="Required percentage"
         value={form.requiredPercent}

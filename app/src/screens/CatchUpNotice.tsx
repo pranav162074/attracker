@@ -19,7 +19,7 @@ export const CatchUpNotice = ({ catchUp, withClasses, onMark, onOfficial, onDone
       <Text style={styles.title}>{text.title}</Text>
       <Text style={styles.body}>{text.body}</Text>
       <View style={styles.actions}>
-        {catchUp.kind === 'late' ? <Button title="Add official numbers" onPress={onOfficial} /> : null}
+        {catchUp.kind === 'late' ? <Button title="Add college attendance" onPress={onOfficial} /> : null}
         <Button title={catchUp.kind === 'gap' ? 'Mark these days' : 'Mark days I missed'} variant={catchUp.kind === 'late' ? 'secondary' : 'primary'} onPress={onMark} />
         <Button title={catchUp.kind === 'gap' ? 'Done, all checked' : 'Not needed'} variant="secondary" onPress={onDone} />
       </View>
