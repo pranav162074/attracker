@@ -51,9 +51,9 @@ Visitors who are not logged in see the welcome page, a page listing what attrack
 - **Today:** the overall percentage and what it means, notices (how marking works, days before tracking started, the last class day nobody checked), and today's classes with Present, Absent and Cancelled buttons. More covers a different subject being taught and extra classes.
 - **Subjects:** each subject's percentage, the ones needing attention first, and what each one needs.
 - **Calendar:** the month, tapping a day to mark it or turn it into a holiday.
-- **Settings:** the semester's dates and rules, subjects, weekly timetable, holidays, attendance from college, reminders, the account, adding a semester and deleting this one.
+- **Settings:** the semester's dates and rules, subjects, weekly timetable, holidays, attendance from college, sharing with classmates, reminders, the account, adding a semester and deleting this one.
 
-A new semester is set up in five steps with Back and Next: dates and rules, subjects, the weekly timetable (with a week-at-a-glance grid), holidays, and whether classes have already started, which leads to entering the college's attendance from the sheet, per subject or as an overall percentage before tracking starts.
+A classmate's timetable can be copied with their share code instead (Settings, Share with classmates), which fills in the steps below for review. A new semester is set up in five steps with Back and Next: dates and rules, subjects, the weekly timetable (with a week-at-a-glance grid), holidays, and whether classes have already started, which leads to entering the college's attendance from the sheet, per subject or as an overall percentage before tracking starts.
 
 ## Deploying
 
@@ -128,6 +128,9 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/today` | Today's classes from every timetable, in time order |
 | GET, POST | `/timetables/{id}/checkpoints` | List or save official numbers on a date: per subject (typed in, or confirmed from a sheet), or one overall percentage (`{ asOf, overallBp, overallHeld? }`) |
 | GET | `/timetables/{id}/checkpoints/estimate?asOf=` | Classes held up to a date by the timetable, used to turn an overall percentage into counts |
+| GET, POST | `/timetables/{id}/share` | The timetable's share code, or make one (it lasts as long as the timetable) |
+| GET | `/shared/{code}` | Preview what a share code copies: dates, rules, subjects, classes a week, holidays; nothing personal |
+| POST | `/shared/{code}/copy` | Copy it into a new timetable of your own in setup (`{ name? }`); later changes on either side stay separate |
 | POST | `/timetables/{id}/checkpoints/sheet?registration=` | Read the student's own row from the class attendance sheet (`.xls`/`.xlsx`) and preview it |
 | DELETE | `/timetables/{id}/checkpoints/{checkpointId}` | Remove a checkpoint |
 | GET | `/health` | Liveness, without touching the database |
@@ -206,5 +209,6 @@ Only rules and exceptions are stored; each individual class is worked out from t
 | `class_marks` | absent, cancelled or substituted classes (present is the default and never stored) |
 | `extra_classes` | classes added outside the grid |
 | `checkpoints`, `checkpoint_subjects` | official held and attended numbers on a date, per subject or as one overall percentage |
+| `share_codes` | one 8-character code per shared timetable |
 
 The database enforces the rules itself: no two classes at overlapping times on the same day, one calendar rule per day, nothing pointing at another timetable's subjects or classes, never more attended than held, and a slot that still holds your marks cannot be deleted.

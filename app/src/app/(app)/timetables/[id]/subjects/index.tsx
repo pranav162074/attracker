@@ -1,19 +1,19 @@
 import { useCallback, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { api } from '../../../../../session.tsx';
 import { subjectNote } from '../../../../../lib/setupForms.ts';
 import { useLoad } from '../../../../../useLoad.ts';
 import { Button } from '../../../../../ui/Button.tsx';
 import { Dot, ListBox, ListRow } from '../../../../../ui/Controls.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
-import { space } from '../../../../../ui/theme.ts';
+import { colors, space } from '../../../../../ui/theme.ts';
 import { SetupFooter, SetupIntro, SetupProgress } from '../../../../../screens/SetupFrame.tsx';
 import { isSetup } from '../../../../../setupFlow.ts';
 
 export default function Subjects() {
   const router = useRouter();
-  const { id, setup } = useLocalSearchParams<{ id: string; setup?: string }>();
+  const { id, setup, copied } = useLocalSearchParams<{ id: string; setup?: string; copied?: string }>();
   const inSetup = isSetup(setup);
   const timetableId = Number(id);
   const load = useCallback(() => api.subjects(timetableId, true), [timetableId]);
@@ -31,6 +31,14 @@ export default function Subjects() {
     <Page refreshing={refreshing} onRefresh={refresh}>
       {inSetup ? <SetupProgress route="subjects" /> : null}
       {inSetup ? <SetupIntro title="Subjects">Add each subject once. Add a lab as its own subject; labs count every period.</SetupIntro> : null}
+      {copied === '1' ? (
+        <View style={styles.copied}>
+          <Text style={styles.copiedTitle}>Copied from your classmate</Text>
+          <Text style={styles.copiedBody}>
+            Change anything that is different for you. For a different open elective, tap that subject and rename it: its classes in the weekly timetable stay where they are.
+          </Text>
+        </View>
+      ) : null}
       <Muted>Add theory classes and labs as separate subjects. Library, sports or counselling can be added as Other, so they show on the timetable without counting for attendance.</Muted>
       {active.length > 0 ? (
         <ListBox>
@@ -70,5 +78,8 @@ export default function Subjects() {
 }
 
 const styles = StyleSheet.create({
+  copied: { backgroundColor: colors.infoBackground, borderRadius: 8, padding: space.lg, marginBottom: space.lg },
+  copiedTitle: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: space.xs },
+  copiedBody: { fontSize: 14, color: colors.text, lineHeight: 20 },
   add: { marginTop: space.lg },
 });

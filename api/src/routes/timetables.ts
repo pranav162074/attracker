@@ -12,6 +12,7 @@ import { calendarRoutes } from './calendar.ts';
 import { dayRoutes, extraRoutes } from './days.ts';
 import { summaryRoutes } from './summary.ts';
 import { checkpointRoutes } from './checkpoints.ts';
+import { createShareCode, getShareCode } from '../sharing/repo.ts';
 
 export const timetableRoutes = express.Router();
 
@@ -51,6 +52,14 @@ timetableRoutes.get('/:id/setup', async (req, res) => {
 
 timetableRoutes.post('/:id/start', async (req, res) => {
   res.json({ timetable: await startTracking(req.auth!.userId, idParam(req.params.id, 'Timetable')) });
+});
+
+timetableRoutes.get('/:id/share', async (req, res) => {
+  res.json({ code: await getShareCode(req.auth!.userId, idParam(req.params.id, 'Timetable')) });
+});
+
+timetableRoutes.post('/:id/share', async (req, res) => {
+  res.json({ code: await createShareCode(req.auth!.userId, idParam(req.params.id, 'Timetable')) });
 });
 
 timetableRoutes.use('/:timetableId/subjects', subjectRoutes);

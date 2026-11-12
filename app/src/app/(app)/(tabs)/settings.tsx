@@ -66,6 +66,7 @@ export default function SettingsTab() {
             <ListRow title="Weekly timetable" detail={step('grid')} onPress={() => router.push(`/timetables/${timetable.id}/grid`)} />
             <ListRow title="Holidays and special days" detail={step('holidays')} onPress={() => router.push(`/timetables/${timetable.id}/calendar`)} />
             <ListRow title="Attendance from college" detail={step('official')} onPress={() => router.push(`/timetables/${timetable.id}/official`)} />
+            <ListRow title="Share with classmates" detail="Let a classmate copy this timetable with a code" onPress={() => router.push(`/timetables/${timetable.id}/share`)} />
           </ListBox>
         </>
       ) : null}

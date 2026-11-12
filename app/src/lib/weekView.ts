@@ -7,8 +7,8 @@ export const abbreviate = (name: string, shortName: string | null = null) => {
   const trimmed = name.trim();
   if (trimmed.length <= 8) return trimmed;
   const letters = trimmed
-    .split(/\s+/)
-    .filter((word) => !SMALL_WORDS.has(word.toLowerCase()))
+    .split(/[^A-Za-z0-9]+/)
+    .filter((word) => word && !SMALL_WORDS.has(word.toLowerCase()))
     .map((word) => word[0]!.toUpperCase())
     .join('');
   return letters.length >= 2 ? letters.slice(0, 6) : trimmed.slice(0, 7);

@@ -8,6 +8,8 @@ describe('the week at a glance', () => {
     expect(abbreviate('Maths')).toBe('Maths');
     expect(abbreviate('Constitution of India', 'COI')).toBe('COI');
     expect(abbreviate('Counselling')).toBe('Counsel');
+    expect(abbreviate('Psychology (Open Elective)')).toBe('POE');
+    expect(abbreviate('Data Structures & Algorithms')).toBe('DSA');
   });
 
   it('lines classes up by start time across the visible days', () => {

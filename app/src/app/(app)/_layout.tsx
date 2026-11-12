@@ -17,6 +17,8 @@ export default function SignedInLayout() {
       <Stack.Screen name="account" options={{ title: 'Account' }} />
       <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
       <Stack.Screen name="timetables/new" options={{ title: 'New semester' }} />
+      <Stack.Screen name="timetables/copy" options={{ title: 'Copy a timetable' }} />
+      <Stack.Screen name="timetables/[id]/share" options={{ title: 'Share' }} />
       <Stack.Screen name="timetables/[id]/index" options={{ title: 'Semester' }} />
       <Stack.Screen name="timetables/[id]/details" options={{ title: 'Semester' }} />
       <Stack.Screen name="timetables/[id]/started" options={{ title: 'New semester' }} />
