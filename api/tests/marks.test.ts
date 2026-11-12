@@ -15,6 +15,8 @@ afterAll(async () => {
 
 type Class = { key: string; slotId: number | null; extraId: number | null; subjectId: number; scheduledSubjectId: number; start: string; status: string; counts: boolean; units: number; plannedAbsent: boolean };
 
+const addDaysIso = (date: string, days: number) => new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+
 const setUp = async ({ start = true, startsOn = '2026-07-20', endsOn = '2026-11-14' } = {}) => {
   const user = await newUser();
   const timetable = (await user.post('/timetables', { name: 'College – Sem V', startsOn, endsOn, requiredPercent: 75, condonationPercent: 65 })).body.timetable;
@@ -228,20 +230,24 @@ describe.skipIf(skipWithoutDatabase)('a range of days', () => {
 
 describe.skipIf(skipWithoutDatabase)('a subject’s history', () => {
   it('lists missed, cancelled, planned, extra and swapped classes for the subject', async () => {
-    const { user, base, ids, at } = await setUp();
+    const now = new Date();
+    const ahead = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 7 + ((8 - now.getUTCDay()) % 7)));
+    const planned = ahead.toISOString().slice(0, 10);
+    const canPlan = planned < '2027-08-01';
+    const { user, base, ids, at } = await setUp({ endsOn: canPlan ? addDaysIso(planned, 6) : '2026-11-14' });
     const classesOn = async (date: string) => (await user.get(`${base}/days/${date}`)).body.day.classes as Class[];
     await user.put(`${base}/days/2026-08-03/classes/${at(await classesOn('2026-08-03'), '08:40').slotId}`, { attendance: 'absent' });
     await user.put(`${base}/days/2026-08-10/classes/${at(await classesOn('2026-08-10'), '12:50').slotId}`, { attendance: 'present', substituteSubjectId: ids.CN });
     await user.put(`${base}/days/2026-08-17/classes/${at(await classesOn('2026-08-17'), '12:00').slotId}`, { attendance: 'cancelled' });
     await user.post(`${base}/days/2026-08-08/extra`, { subjectId: ids.CN, start: '09:00', end: '09:50', attendance: 'absent' });
-    await user.put(`${base}/days/2026-11-09/classes/${at(await classesOn('2026-11-09'), '08:40').slotId}`, { attendance: 'absent' });
+    if (canPlan) await user.put(`${base}/days/${planned}/classes/${at(await classesOn(planned), '08:40').slotId}`, { attendance: 'absent' });
 
     const history = async (key: SubjectKey) => (await user.get(`${base}/subjects/${ids[key]}/history`)).body;
     const lab = await history('OOADL');
     expect(lab.checkpoint).toBeNull();
     expect(lab.events).toEqual([
       { date: '2026-08-03', start: '08:40', end: '11:10', units: 3, kind: 'absent', otherSubjectId: null, beforeCheckpoint: false },
-      { date: '2026-11-09', start: '08:40', end: '11:10', units: 3, kind: 'planned_absent', otherSubjectId: null, beforeCheckpoint: false },
+      ...(canPlan ? [{ date: planned, start: '08:40', end: '11:10', units: 3, kind: 'planned_absent', otherSubjectId: null, beforeCheckpoint: false }] : []),
     ]);
     expect((await history('CN')).events.map((event: { date: string; kind: string; otherSubjectId: number | null }) => [event.date, event.kind, event.otherSubjectId])).toEqual([
       ['2026-08-08', 'absent', null],

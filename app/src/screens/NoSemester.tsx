@@ -11,6 +11,7 @@ export const NoSemester = () => {
       <Text style={styles.title}>Set up your first semester</Text>
       <Text style={styles.body}>Add your subjects and weekly timetable once. After that, every class counts as attended and you only mark the ones you miss.</Text>
       <Button title="Set up a semester" onPress={() => router.push('/timetables/new')} />
+      <Button title="Copy a classmate’s timetable" variant="secondary" onPress={() => router.push('/timetables/copy')} />
     </View>
   );
 };

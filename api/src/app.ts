@@ -12,6 +12,7 @@ import { fromProxy } from './middleware/proxy.ts';
 import { authRoutes } from './routes/auth.ts';
 import { timetableRoutes } from './routes/timetables.ts';
 import { homeRoutes } from './routes/summary.ts';
+import { sharedRoutes } from './routes/shared.ts';
 
 export const app = express();
 
@@ -51,6 +52,7 @@ app.get('/ready', async (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/timetables', timetableRoutes);
+app.use('/shared', sharedRoutes);
 app.use(homeRoutes);
 
 app.use((_req, res) => {

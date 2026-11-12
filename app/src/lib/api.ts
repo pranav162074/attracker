@@ -55,6 +55,18 @@ export type TodayClass = {
   status: ClassStatus;
 };
 
+export type SharedPreview = {
+  code: string;
+  name: string;
+  startsOn: string;
+  endsOn: string | null;
+  requiredPercent: number | null;
+  condonationPercent: number | null;
+  subjects: Array<{ name: string; kind: 'theory' | 'lab' | 'other'; countsAttendance: boolean }>;
+  classesPerWeek: number;
+  specialDays: number;
+};
+
 export type Timetable = {
   id: number;
   name: string;
@@ -385,6 +397,11 @@ export const createApi = (options: ApiOptions) => {
       request<{ timetable: Timetable }>('PATCH', `/timetables/${id}`, changes).then((result) => result.timetable),
     deleteTimetable: (id: number) => request<void>('DELETE', `/timetables/${id}`),
     setup: (id: number) => request<Setup>('GET', `/timetables/${id}/setup`),
+    shareCode: (id: number) => request<{ code: string | null }>('GET', `/timetables/${id}/share`).then((result) => result.code),
+    createShareCode: (id: number) => request<{ code: string }>('POST', `/timetables/${id}/share`).then((result) => result.code),
+    previewShared: (code: string) => request<{ shared: SharedPreview }>('GET', `/shared/${encodeURIComponent(code)}`).then((result) => result.shared),
+    copyShared: (code: string, name?: string) =>
+      request<{ timetable: Timetable }>('POST', `/shared/${encodeURIComponent(code)}/copy`, name ? { name } : {}).then((result) => result.timetable),
     startTracking: (id: number) => request<{ timetable: Timetable }>('POST', `/timetables/${id}/start`).then((result) => result.timetable),
     subjects: (id: number, includeArchived = false) =>
       request<{ subjects: Subject[] }>('GET', `/timetables/${id}/subjects${includeArchived ? '?archived=true' : ''}`).then((result) => result.subjects),

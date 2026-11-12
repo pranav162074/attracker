@@ -12,6 +12,7 @@ import { Page } from '../../../ui/Page.tsx';
 import { chooseSemester } from '../../../currentSemester.ts';
 import { setupPath } from '../../../lib/semester.ts';
 import { SetupIntro, SetupProgress } from '../../../screens/SetupFrame.tsx';
+import { CopyOffer } from '../../../screens/CopyOffer.tsx';
 
 export default function NewTimetable() {
   const router = useRouter();
@@ -41,6 +42,7 @@ export default function NewTimetable() {
   return (
     <Page>
       <SetupProgress route="details" />
+      <CopyOffer />
       <SetupIntro title="Your semester">The days classes run, and your college’s attendance rule.</SetupIntro>
       <ErrorNotice message={message} />
       <TimetableFields form={form} errors={errors} onChange={setForm} />

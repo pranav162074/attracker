@@ -7,7 +7,7 @@ import type { TimetableSettings, UpdateTimetable } from './schemas.ts';
 
 export const MAX_ACTIVE_TIMETABLES = 20;
 
-type Row = {
+export type Row = {
   id: number;
   name: string;
   starts_on: string;
@@ -21,7 +21,7 @@ type Row = {
   updated_at: Date;
 };
 
-const COLUMNS = 'id, name, starts_on, ends_on, time_zone, required_bp, condonation_bp, archived_at, tracking_started_at, created_at, updated_at';
+export const COLUMNS = 'id, name, starts_on, ends_on, time_zone, required_bp, condonation_bp, archived_at, tracking_started_at, created_at, updated_at';
 
 const toBp = (percent: number | null) => (percent === null ? null : Math.round(percent * 100));
 const fromBp = (bp: number | null) => (bp === null ? null : bp / 100);
@@ -45,7 +45,7 @@ export const toTimetable = (row: Row) => ({
 const nameTaken = () => new HttpError(409, 'name_taken', 'You already have a timetable with this name');
 const notFound = () => new HttpError(404, 'not_found', 'Timetable not found');
 
-const rethrow = (error: unknown): never => {
+export const rethrow = (error: unknown): never => {
   if ((error as { code?: string }).code === '23505') throw nameTaken();
   throw error;
 };
@@ -64,13 +64,13 @@ export const getTimetable = async (userId: number, id: number) => {
   return toTimetable(rows[0]);
 };
 
-const lockActiveCount = async (client: PoolClient, userId: number) => {
+export const lockActiveCount = async (client: PoolClient, userId: number) => {
   await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
   const { rows } = await client.query<{ count: number }>('SELECT count(*)::int AS count FROM timetables WHERE user_id = $1 AND archived_at IS NULL', [userId]);
   return rows[0]!.count;
 };
 
-const tooMany = () =>
+export const tooMany = () =>
   new HttpError(409, 'too_many_timetables', `You can have up to ${MAX_ACTIVE_TIMETABLES} active timetables. Archive or delete one first.`);
 
 export const createTimetable = (userId: number, settings: TimetableSettings) =>
