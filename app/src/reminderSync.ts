@@ -1,16 +1,15 @@
 import { localDate } from './lib/format.ts';
 import { shiftDay } from './lib/day.ts';
-import { DAYS_AHEAD, readSettings, reminderDates } from './lib/reminders.ts';
+import { classReminders, DAYS_AHEAD, readSettings } from './lib/reminders.ts';
 import type { ReminderSettings } from './lib/reminders.ts';
 import { clearReminders, hasPermission, notificationsSupported, replaceReminders } from './notifications';
 import { prefs } from './prefs';
 import { api } from './session.tsx';
 
-export const loadReminderSettings = async () => readSettings(await prefs.read('reminder.enabled'), await prefs.read('reminder.minute'));
+export const loadReminderSettings = async () => readSettings(await prefs.read('reminder.enabled'));
 
 export const saveReminderSettings = async (settings: ReminderSettings) => {
   await prefs.save('reminder.enabled', settings.enabled ? 'on' : 'off');
-  await prefs.save('reminder.minute', String(settings.minute));
 };
 
 export const syncReminders = async (now = new Date()) => {
@@ -21,10 +20,8 @@ export const syncReminders = async (now = new Date()) => {
     return settings.enabled ? null : 0;
   }
   const from = localDate(now);
-  const to = shiftDay(from, DAYS_AHEAD - 1);
-  const tracked = (await api.overview()).filter((timetable) => timetable.status === 'tracking');
-  const ranges = await Promise.all(tracked.map((timetable) => api.days(timetable.timetableId, from, to)));
-  return replaceReminders(reminderDates(ranges.flatMap((range) => range.days), settings.minute, now));
+  const classes = await api.classes(from, shiftDay(from, DAYS_AHEAD - 1));
+  return replaceReminders(classReminders(classes, now));
 };
 
 export const stopReminders = async () => {

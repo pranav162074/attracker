@@ -3,7 +3,7 @@ import { HttpError } from '../http/errors.ts';
 import { idParam } from '../http/params.ts';
 import { requireAuth } from '../middleware/auth.ts';
 import { dateSchema } from '../timetables/schemas.ts';
-import { overview, timetableSummary, today } from '../attendance/summary.ts';
+import { classesBetween, overview, timetableSummary, today } from '../attendance/summary.ts';
 
 export const summaryRoutes = express.Router({ mergeParams: true });
 export const homeRoutes = express.Router();
@@ -24,4 +24,12 @@ homeRoutes.get('/overview', requireAuth, async (req, res) => {
 
 homeRoutes.get('/today', requireAuth, async (req, res) => {
   res.set('Cache-Control', 'no-store').json({ classes: await today(req.auth!.userId) });
+});
+
+homeRoutes.get('/classes', requireAuth, async (req, res) => {
+  const from = dateSchema('from').safeParse(req.query.from);
+  if (!from.success) throw new HttpError(400, 'validation_error', from.error.issues[0]!.message);
+  const to = dateSchema('to').safeParse(req.query.to);
+  if (!to.success) throw new HttpError(400, 'validation_error', to.error.issues[0]!.message);
+  res.set('Cache-Control', 'no-store').json({ classes: await classesBetween(req.auth!.userId, from.data, to.data) });
 });

@@ -37,9 +37,9 @@ export const getDay = async (userId: number, timetableId: number, date: string) 
 
 export const MAX_RANGE_DAYS = 62;
 
-const daySpan = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
+export const daySpan = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1;
 
-const nextDate = (date: string) => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+export const nextDate = (date: string) => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
 const overview = (plan: DayPlan) => {
   const totals = { classes: plan.occurrences.length, held: 0, attended: 0, absent: 0, cancelled: 0, upcoming: 0, plannedAbsent: 0, extra: 0, swapped: 0 };
