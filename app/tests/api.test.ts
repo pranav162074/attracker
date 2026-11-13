@@ -263,7 +263,7 @@ describe('the API client', () => {
 
   it('gives a plain message when the server fails without JSON', async () => {
     const { fn } = fakeFetch(() => new Response('<html>Bad gateway</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }));
-    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn });
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, retryAfterMs: 5, timeoutMs: 40 });
     await expect(api.me()).rejects.toMatchObject({ status: 502, code: 'http_error', message: 'Something went wrong on our side. Try again in a minute.' });
   });
 
@@ -282,5 +282,76 @@ describe('the API client', () => {
       })) as unknown as typeof fetch;
     const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, timeoutMs: 30 });
     await expect(api.me()).rejects.toBeInstanceOf(NetworkError);
+  });
+});
+
+describe('a server that is waking up', () => {
+  it('says it is waiting when an answer is slow and stops saying so once it arrives', async () => {
+    const waits: boolean[] = [];
+    const fn = (() => new Promise<Response>((resolve) => setTimeout(() => resolve(json(200, { user: USER })), 40))) as unknown as typeof fetch;
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, slowAfterMs: 10, onWaiting: (waiting) => waits.push(waiting) });
+    expect(await api.me()).toEqual(USER);
+    expect(waits).toEqual([true, false]);
+  });
+
+  it('says nothing when the answer is quick', async () => {
+    const waits: boolean[] = [];
+    const { fn } = fakeFetch(() => json(200, { user: USER }));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, slowAfterMs: 50, onWaiting: (waiting) => waits.push(waiting) });
+    await api.me();
+    expect(waits).toEqual([]);
+  });
+
+  it('says it is waiting once for several slow requests at the same time', async () => {
+    const waits: boolean[] = [];
+    const fn = (() => new Promise<Response>((resolve) => setTimeout(() => resolve(json(200, { user: USER })), 40))) as unknown as typeof fetch;
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, slowAfterMs: 10, onWaiting: (waiting) => waits.push(waiting) });
+    await Promise.all([api.me(), api.me(), api.me()]);
+    expect(waits).toEqual([true, false]);
+  });
+
+  it('asks again when the server is not ready yet', async () => {
+    let count = 0;
+    const { fn, calls } = fakeFetch(() => (++count < 3 ? new Response('starting', { status: 503 }) : json(200, { user: USER })));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, retryAfterMs: 5 });
+    expect(await api.me()).toEqual(USER);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('does not repeat a change, in case the first one went through', async () => {
+    const { fn, calls } = fakeFetch(() => new Response('bad gateway', { status: 502 }));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, retryAfterMs: 5 });
+    await expect(api.logout()).rejects.toBeInstanceOf(ApiError);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('stops asking again when it runs out of time and passes on what the server said', async () => {
+    const { fn } = fakeFetch(() => new Response('starting', { status: 503 }));
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, retryAfterMs: 5, timeoutMs: 40 });
+    const error = await api.me().catch((failure: unknown) => failure);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(503);
+  });
+
+  it('waits up to 90 seconds by default', async () => {
+    vi.useFakeTimers();
+    try {
+      let aborted = false;
+      const fn = ((_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            aborted = true;
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        })) as unknown as typeof fetch;
+      const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn });
+      const result = api.me().catch((error: unknown) => error);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(await result).toBeInstanceOf(NetworkError);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

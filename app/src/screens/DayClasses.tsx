@@ -197,13 +197,14 @@ type Props = {
   date: string;
   empty?: (day: Day) => ReactNode;
   onChanged?: () => void;
+  follow?: unknown;
   showAddExtra?: boolean;
 };
 
-export const DayClasses = ({ timetableId, date, empty, onChanged, showAddExtra = true }: Props) => {
+export const DayClasses = ({ timetableId, date, empty, onChanged, follow, showAddExtra = true }: Props) => {
   const load = useCallback(() => loadDay(timetableId, date), [timetableId, date]);
   const finish = useCallback((loaded: Awaited<ReturnType<typeof loadDay>>) => withPending(timetableId, date, loaded), [timetableId, date]);
-  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `day.${timetableId}.${date}`, finish);
+  const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `day.${timetableId}.${date}`, finish, follow);
   const [override, setOverride] = useState<{ base: typeof data; day: Day } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

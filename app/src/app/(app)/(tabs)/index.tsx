@@ -124,8 +124,10 @@ export default function Today() {
             Today’s classes
           </Text>
           <DayClasses
+            key={tracking.id}
             timetableId={tracking.id}
             date={today}
+            follow={tracking}
             onChanged={refresh}
             empty={(day) => (
               <View style={styles.empty}>

@@ -307,6 +307,9 @@ export type ApiOptions = {
   onUnauthorized?: () => void;
   fetch?: typeof fetch;
   timeoutMs?: number;
+  slowAfterMs?: number;
+  retryAfterMs?: number;
+  onWaiting?: (waiting: boolean) => void;
 };
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -338,8 +341,30 @@ const AUTH_PATHS = new Set(['/auth/login', '/auth/signup', '/auth/google', '/aut
 export const createApi = (options: ApiOptions) => {
   const baseUrl = options.baseUrl.replace(/\/+$/, '');
   const doFetch = options.fetch ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
-  const timeoutMs = options.timeoutMs ?? 20_000;
+  const timeoutMs = options.timeoutMs ?? 90_000;
+  const slowAfterMs = options.slowAfterMs ?? 4_000;
+  const retryAfterMs = options.retryAfterMs ?? 3_000;
   const client = options.mode === 'token' ? 'app' : 'web';
+  let slow = 0;
+
+  const waitStarted = () => {
+    slow += 1;
+    if (slow === 1) options.onWaiting?.(true);
+  };
+
+  const waitEnded = () => {
+    slow -= 1;
+    if (slow === 0) options.onWaiting?.(false);
+  };
+
+  const pause = (ms: number, signal: AbortSignal) =>
+    new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, ms);
+      signal.addEventListener('abort', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
 
   const request = async <T>(method: Method, path: string, body?: unknown, file?: Blob | ArrayBuffer): Promise<T> => {
     const headers: Record<string, string> = { Accept: 'application/json' };
@@ -350,19 +375,31 @@ export const createApi = (options: ApiOptions) => {
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let waiting = false;
+    const slowTimer = setTimeout(() => {
+      waiting = true;
+      waitStarted();
+    }, slowAfterMs);
     let res: Response;
     try {
-      res = await doFetch(`${baseUrl}${path}`, {
-        method,
-        headers,
-        body: file !== undefined ? file : body === undefined ? undefined : JSON.stringify(body),
-        credentials: options.mode === 'cookie' ? 'include' : 'omit',
-        signal: controller.signal,
-      });
+      for (;;) {
+        res = await doFetch(`${baseUrl}${path}`, {
+          method,
+          headers,
+          body: file !== undefined ? file : body === undefined ? undefined : JSON.stringify(body),
+          credentials: options.mode === 'cookie' ? 'include' : 'omit',
+          signal: controller.signal,
+        });
+        if (method !== 'GET' || ![502, 503, 504].includes(res.status)) break;
+        await pause(retryAfterMs, controller.signal);
+        if (controller.signal.aborted) break;
+      }
     } catch {
       throw new NetworkError();
     } finally {
       clearTimeout(timer);
+      clearTimeout(slowTimer);
+      if (waiting) waitEnded();
     }
 
     const data = await readBody(res);

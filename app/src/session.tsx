@@ -9,6 +9,7 @@ import { forgetEverything, rememberUser, rememberedUser } from './lib/offline.ts
 import type { User } from './lib/api.ts';
 import { storage } from './storage.ts';
 import { tokenStore } from './tokenStore';
+import { setWaking } from './waking.ts';
 
 const holder: TokenHolder = { current: null };
 let onSessionLost = () => {};
@@ -17,6 +18,7 @@ export const api: Api = createApi({
   baseUrl: apiUrl ?? '',
   mode: apiMode,
   getToken: () => holder.current,
+  onWaiting: setWaking,
   onUnauthorized: () => {
     holder.current = null;
     tokenStore.clear().catch(() => {});
