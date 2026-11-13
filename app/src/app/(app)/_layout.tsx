@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import { useReminderResponses } from '../../reminderResponses';
 import { colors } from '../../ui/theme.ts';
 
 export default function SignedInLayout() {
+  useReminderResponses();
   return (
     <Stack
       screenOptions={{

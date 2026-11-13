@@ -55,6 +55,24 @@ export type TodayClass = {
   status: ClassStatus;
 };
 
+export type UpcomingClass = {
+  timetableId: number;
+  timetableName: string;
+  date: string;
+  key: string;
+  slotId: number | null;
+  extraId: number | null;
+  subjectId: number;
+  scheduledSubjectId: number;
+  subjectName: string | null;
+  shortName: string | null;
+  start: string;
+  end: string;
+  counts: boolean;
+  status: ClassStatus;
+  plannedAbsent: boolean;
+};
+
 export type SharedPreview = {
   code: string;
   name: string;
@@ -428,6 +446,7 @@ export const createApi = (options: ApiOptions) => {
     logoutAll: () => request<void>('POST', '/auth/logout-all'),
     overview: () => request<{ timetables: OverviewItem[] }>('GET', '/overview').then((result) => result.timetables),
     today: () => request<{ classes: TodayClass[] }>('GET', '/today').then((result) => result.classes),
+    classes: (from: string, to: string) => request<{ classes: UpcomingClass[] }>('GET', `/classes?from=${from}&to=${to}`).then((result) => result.classes),
     createTimetable: (input: TimetableInput) => request<{ timetable: Timetable }>('POST', '/timetables', input).then((result) => result.timetable),
     timetable: (id: number) => request<{ timetable: Timetable }>('GET', `/timetables/${id}`).then((result) => result.timetable),
     updateTimetable: (id: number, changes: Partial<TimetableInput> & { archived?: boolean }) =>

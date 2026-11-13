@@ -2,7 +2,9 @@ import { dayPlan, formatPercent, summarize } from '@attracker/engine';
 import type { LineResult, Tally } from '@attracker/engine';
 import { query } from '../db/pool.ts';
 import { toClock } from '../grid/time.ts';
+import { HttpError } from '../http/errors.ts';
 import { loadEngineInput, nowIn } from './load.ts';
+import { daySpan, nextDate } from './marks.ts';
 
 const percentOf = (value: number | null) => (value === null ? null : value / 100);
 
@@ -142,4 +144,48 @@ export const today = async (userId: number) => {
     .flat()
     .map((item) => ({ ...item, subjectName: byId.get(item.subjectId)?.name ?? null, shortName: byId.get(item.subjectId)?.short_name ?? null, colour: byId.get(item.subjectId)?.colour ?? null }))
     .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.timetableId - b.timetableId));
+};
+
+export const MAX_CLASS_RANGE_DAYS = 31;
+
+export const classesBetween = async (userId: number, from: string, to: string) => {
+  if (to < from) throw new HttpError(400, 'validation_error', 'to must be on or after from');
+  if (daySpan(from, to) > MAX_CLASS_RANGE_DAYS) throw new HttpError(400, 'validation_error', `Ask for at most ${MAX_CLASS_RANGE_DAYS} days at a time`);
+  const timetables = await activeTimetables(userId);
+  const found = await Promise.all(
+    timetables.map(async (timetable) => {
+      const { timetable: info, input } = await loadEngineInput(userId, timetable.id);
+      if (!info.tracking) return [];
+      const items = [];
+      for (let date = from; date <= to; date = nextDate(date)) {
+        for (const occurrence of dayPlan(input, date).occurrences) {
+          items.push({
+            timetableId: timetable.id,
+            timetableName: timetable.name,
+            date,
+            key: occurrence.key,
+            slotId: occurrence.slotId,
+            extraId: occurrence.extraId,
+            subjectId: occurrence.subjectId,
+            scheduledSubjectId: occurrence.scheduledSubjectId,
+            start: toClock(occurrence.startMinute),
+            end: toClock(occurrence.endMinute),
+            counts: occurrence.counts,
+            status: occurrence.status,
+            plannedAbsent: occurrence.plannedAbsent,
+          });
+        }
+      }
+      return items;
+    })
+  );
+  const subjectIds = [...new Set(found.flat().map((item) => item.subjectId))];
+  const names = subjectIds.length
+    ? await query<{ id: number; name: string; short_name: string | null }>('SELECT id, name, short_name FROM subjects WHERE id = ANY($1::bigint[])', [subjectIds])
+    : [];
+  const byId = new Map(names.map((row) => [row.id, row]));
+  return found
+    .flat()
+    .map((item) => ({ ...item, subjectName: byId.get(item.subjectId)?.name ?? null, shortName: byId.get(item.subjectId)?.short_name ?? null }))
+    .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : a.start < b.start ? -1 : a.start > b.start ? 1 : a.timetableId - b.timetableId));
 };

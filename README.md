@@ -138,6 +138,7 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 | GET | `/timetables/{id}/summary` | Overall and per-subject attendance, zone, can miss, need, best possible (`?asOf=YYYY-MM-DD` for any date) |
 | GET | `/overview` | Every active timetable's headline number, for the semester switcher |
 | GET | `/today` | Today's classes from every timetable, in time order |
+| GET | `/classes` | Every class of the tracking timetables between `?from=` and `?to=` (at most 31 days), for after-class reminders |
 | GET, POST | `/timetables/{id}/checkpoints` | List or save official numbers on a date: per subject (typed in, or confirmed from a sheet), or one overall percentage (`{ asOf, overallBp, overallHeld? }`) |
 | GET | `/timetables/{id}/checkpoints/estimate?asOf=` | Classes held up to a date by the timetable, used to turn an overall percentage into counts |
 | GET, POST | `/timetables/{id}/share` | The timetable's share code, or make one (it lasts as long as the timetable) |
