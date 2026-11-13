@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { problemFrom } from './lib/forms.ts';
 import { flushOutbox, loadWithCache } from './lib/offline.ts';
@@ -10,7 +10,7 @@ type LoadState<T> = { data: T | null; error: string | null; refreshing: boolean;
 
 export const sendQueuedMark = (item: QueuedMark) => api.mark(item.timetableId, item.date, item.slotId, item.mark);
 
-export const useLoad = <T, U = T>(load: () => Promise<T>, cacheKey?: string, finish?: (data: T) => Promise<U>) => {
+export const useLoad = <T, U = T>(load: () => Promise<T>, cacheKey?: string, finish?: (data: T) => Promise<U>, follow?: unknown) => {
   const [state, setState] = useState<LoadState<U>>({ data: null, error: null, refreshing: false, savedAt: null });
 
   const fetchNow = useCallback(async () => {
@@ -24,11 +24,17 @@ export const useLoad = <T, U = T>(load: () => Promise<T>, cacheKey?: string, fin
     }
   }, [load, cacheKey, finish]);
 
+  const following = follow !== undefined;
+
   useFocusEffect(
     useCallback(() => {
-      fetchNow();
-    }, [fetchNow])
+      if (!following) fetchNow();
+    }, [fetchNow, following])
   );
+
+  useEffect(() => {
+    if (following) fetchNow();
+  }, [fetchNow, following, follow]);
 
   const refresh = useCallback(() => {
     setState((current) => ({ ...current, refreshing: true }));
