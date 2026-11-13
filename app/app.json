@@ -2,7 +2,7 @@
   "expo": {
     "name": "attracker",
     "slug": "attracker",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,6 +23,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -36,6 +37,17 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.attracker"
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "d206f419-fc90-454a-9bf0-865e461283b3"
+      }
+    },
+    "owner": "pranav162074"
   }
 }

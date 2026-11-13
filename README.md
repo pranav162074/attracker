@@ -80,6 +80,18 @@ A free service sleeps after 15 minutes without requests, and the first request a
 
 To try the Worker on this computer: `npm run build:web`, then `npx wrangler dev` with `API_ORIGIN` and `PROXY_SECRET` in a `.dev.vars` file.
 
+**Android app (EAS Build).** `app/eas.json` has two profiles, both pointing the app at the Worker's `/api`. `preview` makes an APK to install directly, and `production` makes an app bundle for the Play Store. With a free Expo account, from the `app` folder:
+
+```
+npx eas-cli login
+npx eas-cli init
+npx eas-cli build --platform android --profile preview
+```
+
+`init` links the project to the account and writes its ID into `app.json` (commit that). The build runs on Expo's servers and ends with a link to the APK. Expo keeps the signing key, so later builds update the installed app instead of needing a reinstall.
+
+**iPhone.** There is no iOS build. The website can be added to the home screen (Safari, Share, Add to Home Screen) and then opens full screen with its own icon, from `app/public/manifest.webmanifest` and the icons beside it.
+
 ## Checks
 
 ```
