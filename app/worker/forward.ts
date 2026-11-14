@@ -33,3 +33,25 @@ export const forward = async (request: Request, env: ForwardEnv, send: typeof fe
     return Response.json({ error: 'server_unreachable', message: 'The attracker server did not answer. Try again in a minute.' }, { status: 502 });
   }
 };
+
+export const WAKE_TRIES = 4;
+
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const wake = async (env: ForwardEnv, send: typeof fetch = fetch, waitMs = 15_000) => {
+  if (!env.API_ORIGIN || !env.PROXY_SECRET) return 0;
+  const target = new URL(env.API_ORIGIN);
+  target.pathname = '/health';
+  target.search = '';
+  let status = 0;
+  for (let attempt = 1; attempt <= WAKE_TRIES; attempt += 1) {
+    try {
+      status = (await send(target.toString(), { headers: { 'x-attracker-proxy': env.PROXY_SECRET } })).status;
+    } catch {
+      status = 0;
+    }
+    if (status === 200) return status;
+    if (attempt < WAKE_TRIES) await pause(waitMs);
+  }
+  return status;
+};

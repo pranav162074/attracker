@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { forward, isApiPath } from '../worker/forward.ts';
+import { forward, isApiPath, wake, WAKE_TRIES } from '../worker/forward.ts';
 
 const ENV = { API_ORIGIN: 'https://attracker-api.onrender.com', PROXY_SECRET: 'secret-from-settings' };
 
@@ -56,5 +56,44 @@ describe('the website forwarder', () => {
     const down = await forward(new Request('https://site.example/api/today'), ENV, (async () => Promise.reject(new TypeError('fetch failed'))) as typeof fetch);
     expect(down.status).toBe(502);
     expect((await down.json()).error).toBe('server_unreachable');
+  });
+});
+
+describe('keeping the API awake', () => {
+  const answers = (...statuses: Array<number | Error>) => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const send = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), init: init ?? {} });
+      const next = statuses.shift() ?? 200;
+      if (next instanceof Error) throw next;
+      return new Response(null, { status: next });
+    });
+    return { send: send as unknown as typeof fetch, calls };
+  };
+
+  it('asks the API for /health with the secret', async () => {
+    const { send, calls } = answers(200);
+    expect(await wake(ENV, send, 0)).toBe(200);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe('https://attracker-api.onrender.com/health');
+    expect(new Headers(calls[0]!.init.headers).get('x-attracker-proxy')).toBe('secret-from-settings');
+  });
+
+  it('tries again while the API is still starting', async () => {
+    const { send, calls } = answers(502, new Error('connection reset'), 200);
+    expect(await wake(ENV, send, 0)).toBe(200);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('gives up after a few tries', async () => {
+    const { send, calls } = answers(502, 502, 502, 502, 502, 502);
+    expect(await wake(ENV, send, 0)).toBe(502);
+    expect(calls).toHaveLength(WAKE_TRIES);
+  });
+
+  it('does nothing until the website is connected to the API', async () => {
+    const { send, calls } = answers(200);
+    expect(await wake({ API_ORIGIN: '', PROXY_SECRET: '' }, send, 0)).toBe(0);
+    expect(calls).toHaveLength(0);
   });
 });
