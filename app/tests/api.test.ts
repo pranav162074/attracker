@@ -333,23 +333,54 @@ describe('a server that is waking up', () => {
     expect((error as ApiError).status).toBe(503);
   });
 
-  it('waits up to 90 seconds by default', async () => {
+  it('replaces a request that hangs with a fresh one, like reopening the app', async () => {
+    let count = 0;
+    const fn = ((_input: RequestInfo | URL, init?: RequestInit) => {
+      count += 1;
+      if (count === 1) {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        });
+      }
+      return Promise.resolve(json(200, { user: USER }));
+    }) as unknown as typeof fetch;
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, attemptMs: 20 });
+    expect(await api.me()).toEqual(USER);
+    expect(count).toBe(2);
+  });
+
+  it('does not repeat a change that hangs', async () => {
+    let count = 0;
+    const fn = ((_input: RequestInfo | URL, init?: RequestInit) => {
+      count += 1;
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      });
+    }) as unknown as typeof fetch;
+    const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn, attemptMs: 10, timeoutMs: 60 });
+    await expect(api.logout()).rejects.toBeInstanceOf(NetworkError);
+    expect(count).toBe(1);
+  });
+
+  it('tries a fresh request every 20 seconds and gives up after 90 by default', async () => {
     vi.useFakeTimers();
     try {
-      let aborted = false;
-      const fn = ((_input: RequestInfo | URL, init?: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () => {
-            aborted = true;
-            reject(new DOMException('Aborted', 'AbortError'));
-          });
-        })) as unknown as typeof fetch;
+      let count = 0;
+      const fn = ((_input: RequestInfo | URL, init?: RequestInit) => {
+        count += 1;
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        });
+      }) as unknown as typeof fetch;
       const api = createApi({ baseUrl: 'http://x', mode: 'token', fetch: fn });
       const result = api.me().catch((error: unknown) => error);
-      await vi.advanceTimersByTimeAsync(60_000);
-      expect(aborted).toBe(false);
-      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.advanceTimersByTimeAsync(19_000);
+      expect(count).toBe(1);
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(count).toBe(2);
+      await vi.advanceTimersByTimeAsync(69_000);
       expect(await result).toBeInstanceOf(NetworkError);
+      expect(count).toBe(5);
     } finally {
       vi.useRealTimers();
     }

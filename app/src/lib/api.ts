@@ -327,6 +327,7 @@ export type ApiOptions = {
   timeoutMs?: number;
   slowAfterMs?: number;
   retryAfterMs?: number;
+  attemptMs?: number;
   onWaiting?: (waiting: boolean) => void;
 };
 
@@ -362,6 +363,7 @@ export const createApi = (options: ApiOptions) => {
   const timeoutMs = options.timeoutMs ?? 90_000;
   const slowAfterMs = options.slowAfterMs ?? 4_000;
   const retryAfterMs = options.retryAfterMs ?? 3_000;
+  const attemptMs = options.attemptMs ?? 20_000;
   const client = options.mode === 'token' ? 'app' : 'web';
   let slow = 0;
 
@@ -375,14 +377,7 @@ export const createApi = (options: ApiOptions) => {
     if (slow === 0) options.onWaiting?.(false);
   };
 
-  const pause = (ms: number, signal: AbortSignal) =>
-    new Promise<void>((resolve) => {
-      const timer = setTimeout(resolve, ms);
-      signal.addEventListener('abort', () => {
-        clearTimeout(timer);
-        resolve();
-      });
-    });
+  const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
   const request = async <T>(method: Method, path: string, body?: unknown, file?: Blob | ArrayBuffer): Promise<T> => {
     const headers: Record<string, string> = { Accept: 'application/json' };
@@ -391,34 +386,51 @@ export const createApi = (options: ApiOptions) => {
     const token = options.mode === 'token' ? options.getToken?.() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const deadline = Date.now() + timeoutMs;
+    const repeatable = method === 'GET';
     let waiting = false;
     const slowTimer = setTimeout(() => {
       waiting = true;
       waitStarted();
     }, slowAfterMs);
-    let res: Response;
+    let res: Response | null = null;
     try {
       for (;;) {
-        res = await doFetch(`${baseUrl}${path}`, {
-          method,
-          headers,
-          body: file !== undefined ? file : body === undefined ? undefined : JSON.stringify(body),
-          credentials: options.mode === 'cookie' ? 'include' : 'omit',
-          signal: controller.signal,
-        });
-        if (method !== 'GET' || ![502, 503, 504].includes(res.status)) break;
-        await pause(retryAfterMs, controller.signal);
-        if (controller.signal.aborted) break;
+        const left = deadline - Date.now();
+        if (left <= 0) break;
+        const controller = new AbortController();
+        let gaveUp = false;
+        const timer = setTimeout(
+          () => {
+            gaveUp = true;
+            controller.abort();
+          },
+          repeatable ? Math.min(attemptMs, left) : left
+        );
+        try {
+          res = await doFetch(`${baseUrl}${path}`, {
+            method,
+            headers,
+            body: file !== undefined ? file : body === undefined ? undefined : JSON.stringify(body),
+            credentials: options.mode === 'cookie' ? 'include' : 'omit',
+            signal: controller.signal,
+          });
+        } catch {
+          if (gaveUp && repeatable) continue;
+          throw new NetworkError();
+        } finally {
+          clearTimeout(timer);
+        }
+        if (!repeatable || ![502, 503, 504].includes(res.status)) break;
+        const wait = Math.min(retryAfterMs, deadline - Date.now());
+        if (wait <= 0) break;
+        await pause(wait);
       }
-    } catch {
-      throw new NetworkError();
     } finally {
-      clearTimeout(timer);
       clearTimeout(slowTimer);
       if (waiting) waitEnded();
     }
+    if (!res) throw new NetworkError();
 
     const data = await readBody(res);
     if (res.ok) return data as T;
