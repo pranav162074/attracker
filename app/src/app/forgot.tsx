@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { TextInputInstance } from 'react-native';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { api, useSession } from '../session.tsx';
@@ -9,9 +9,10 @@ import { Button } from '../ui/Button.tsx';
 import { FormScreen } from '../ui/FormScreen.tsx';
 import { ErrorNotice } from '../ui/Notice.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 export default function Forgot() {
+  const styles = useStyles();
   const params = useLocalSearchParams<{ email?: string }>();
   const { resetPassword } = useSession();
   const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
@@ -166,9 +167,9 @@ export default function Forgot() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: space.xl },
   link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   note: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: space.md },
   actions: { gap: space.md, marginTop: space.xl },
-});
+}));

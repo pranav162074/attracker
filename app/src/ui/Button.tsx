@@ -1,5 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors, space } from './theme.ts';
+import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { makeStyles, space, useTheme } from './theme.ts';
 
 type Props = {
   title: string;
@@ -10,6 +10,8 @@ type Props = {
 };
 
 export const Button = ({ title, onPress, busy = false, disabled = false, variant = 'primary' }: Props) => {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const inactive = busy || disabled;
   const primary = variant !== 'secondary';
   return (
@@ -31,7 +33,7 @@ export const Button = ({ title, onPress, busy = false, disabled = false, variant
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={primary ? '#ffffff' : colors.primary} />
+        <ActivityIndicator color={primary ? colors.onPrimary : colors.primary} />
       ) : (
         <Text style={[styles.text, primary ? styles.primaryText : styles.secondaryText]}>{title}</Text>
       )}
@@ -39,16 +41,16 @@ export const Button = ({ title, onPress, busy = false, disabled = false, variant
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   base: { minHeight: 48, borderRadius: 6, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.lg },
   primary: { backgroundColor: colors.primary },
   primaryPressed: { backgroundColor: colors.primaryPressed },
   primaryDisabled: { backgroundColor: colors.disabled },
-  danger: { backgroundColor: colors.error },
-  dangerPressed: { backgroundColor: '#8c1d18' },
+  danger: { backgroundColor: colors.danger },
+  dangerPressed: { backgroundColor: colors.dangerPressed },
   secondary: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   secondaryPressed: { backgroundColor: colors.surface },
   text: { fontSize: 16, fontWeight: '600' },
-  primaryText: { color: '#ffffff' },
+  primaryText: { color: colors.onPrimary },
   secondaryText: { color: colors.text },
-});
+}));

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, space } from './theme.ts';
+import { makeStyles, space, useTheme } from './theme.ts';
 
 export const WAKING_TITLE = 'Waking up the server…';
 export const WAKING_BODY = 'attracker sleeps when nobody has used it for a while. This can take up to a minute.';
@@ -23,6 +23,8 @@ const useLongWait = () => {
 };
 
 export const WakingBar = () => {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const long = useLongWait();
   return (
@@ -37,6 +39,8 @@ export const WakingBar = () => {
 };
 
 export const WakingScreen = () => {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const long = useLongWait();
   return (
     <View style={styles.screen} role="status">
@@ -47,7 +51,7 @@ export const WakingScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   bar: {
     position: 'absolute',
     top: 0,
@@ -67,4 +71,4 @@ const styles = StyleSheet.create({
   body: { fontSize: 13, color: colors.muted, lineHeight: 18, marginTop: 2 },
   screen: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: space.xl, gap: space.sm },
   centred: { textAlign: 'center', maxWidth: 360 },
-});
+}));

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../session.tsx';
 import type { DayOverview } from '../lib/api.ts';
@@ -10,7 +10,8 @@ import type { CellLook } from '../lib/month.ts';
 import { useLoad } from '../useLoad.ts';
 import { OfflineNotice } from '../ui/OfflineNotice.tsx';
 import { LoadFailed, Loading, Muted } from '../ui/Page.tsx';
-import { colors, space, tones } from '../ui/theme.ts';
+import { makeStyles, space, useTheme } from '../ui/theme.ts';
+import type { Theme } from '../ui/theme.ts';
 
 const loadMonth = async (id: number, keyText: string) => {
   const key = parseMonthParam(keyText, keyText);
@@ -19,7 +20,7 @@ const loadMonth = async (id: number, keyText: string) => {
   return { timetable, range, key };
 };
 
-const looks: Record<CellLook, { background: string; text: string }> = {
+const looksFor = ({ colors, tones }: Theme): Record<CellLook, { background: string; text: string }> => ({
   outside: { background: 'transparent', text: colors.disabled },
   holiday: { background: colors.surface, text: colors.muted },
   absent: { background: tones.bad.background, text: tones.bad.text },
@@ -27,26 +28,32 @@ const looks: Record<CellLook, { background: string; text: string }> = {
   cancelled: { background: colors.surface, text: colors.muted },
   upcoming: { background: colors.background, text: colors.text },
   empty: { background: colors.background, text: colors.muted },
+});
+
+const Legend = () => {
+  const styles = useStyles();
+  const looks = looksFor(useTheme());
+  return (
+    <View style={styles.legend}>
+      {(
+        [
+          ['present', 'All attended'],
+          ['absent', 'Missed some'],
+          ['holiday', 'Holiday or no classes held'],
+        ] as const
+      ).map(([look, label]) => (
+        <View key={look} style={styles.legendItem}>
+          <View style={[styles.legendSwatch, { backgroundColor: looks[look].background }]} />
+          <Text style={styles.legendText}>{label}</Text>
+        </View>
+      ))}
+    </View>
+  );
 };
 
-const Legend = () => (
-  <View style={styles.legend}>
-    {(
-      [
-        ['present', 'All attended'],
-        ['absent', 'Missed some'],
-        ['holiday', 'Holiday or no classes held'],
-      ] as const
-    ).map(([look, label]) => (
-      <View key={look} style={styles.legendItem}>
-        <View style={[styles.legendSwatch, { backgroundColor: looks[look].background }]} />
-        <Text style={styles.legendText}>{label}</Text>
-      </View>
-    ))}
-  </View>
-);
-
 export const MonthView = ({ timetableId, month, onMonth }: { timetableId: number; month: string | undefined; onMonth: (month: string) => void }) => {
+  const looks = looksFor(useTheme());
+  const styles = useStyles();
   const router = useRouter();
   const today = localDate();
   const keyText = monthParam(parseMonthParam(month, today));
@@ -145,7 +152,7 @@ export const MonthView = ({ timetableId, month, onMonth }: { timetableId: number
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },
   arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   arrowText: { fontSize: 28, color: colors.primary },
@@ -165,4 +172,4 @@ const styles = StyleSheet.create({
   totalsDetail: { fontSize: 13, color: colors.muted, marginTop: 2 },
   thisMonth: { alignSelf: 'flex-start', paddingVertical: space.sm, marginBottom: space.sm },
   thisMonthText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
-});
+}));

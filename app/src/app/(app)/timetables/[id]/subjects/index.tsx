@@ -1,17 +1,18 @@
 import { useCallback, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { api } from '../../../../../session.tsx';
 import { subjectNote } from '../../../../../lib/setupForms.ts';
 import { useLoad } from '../../../../../useLoad.ts';
 import { Button } from '../../../../../ui/Button.tsx';
 import { Dot, ListBox, ListRow } from '../../../../../ui/Controls.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
-import { colors, space } from '../../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../../ui/theme.ts';
 import { SetupFooter, SetupIntro, SetupProgress } from '../../../../../screens/SetupFrame.tsx';
 import { isSetup } from '../../../../../setupFlow.ts';
 
 export default function Subjects() {
+  const styles = useStyles();
   const router = useRouter();
   const { id, setup, copied } = useLocalSearchParams<{ id: string; setup?: string; copied?: string }>();
   const inSetup = isSetup(setup);
@@ -77,9 +78,9 @@ export default function Subjects() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   copied: { backgroundColor: colors.infoBackground, borderRadius: 8, padding: space.lg, marginBottom: space.lg },
   copiedTitle: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: space.xs },
   copiedBody: { fontSize: 14, color: colors.text, lineHeight: 20 },
   add: { marginTop: space.lg },
-});
+}));

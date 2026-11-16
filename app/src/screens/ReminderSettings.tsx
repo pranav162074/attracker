@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { problemFrom } from '../lib/forms.ts';
 import { reminderSummary } from '../lib/reminders.ts';
 import type { ReminderSettings as Settings } from '../lib/reminders.ts';
@@ -7,9 +7,10 @@ import { askPermission, notificationsSupported } from '../notifications';
 import { loadReminderSettings, saveReminderSettings, syncReminders } from '../reminderSync.ts';
 import { SwitchRow } from '../ui/Controls.tsx';
 import { ErrorNotice } from '../ui/Notice.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 export const ReminderSettings = () => {
+  const styles = useStyles();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [scheduled, setScheduled] = useState<number | null>(null);
@@ -76,9 +77,9 @@ export const ReminderSettings = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   wrap: {},
   title: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: space.md },
   note: { fontSize: 13, color: colors.muted, lineHeight: 18 },
   gap: { marginTop: space.sm },
-});
+}));

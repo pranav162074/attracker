@@ -1,8 +1,8 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../ui/Button.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 const FEATURES = [
   { title: 'One tap a day', body: 'Every class counts as attended. Tap Absent only when you miss one, or Cancelled when it does not happen.' },
@@ -10,10 +10,12 @@ const FEATURES = [
   { title: 'Start any time', body: 'Joined partway through the semester? Enter the attendance the college gave you: from the sheet, per subject, or just the overall percentage.' },
   { title: 'What you can still miss', body: 'For the semester and every subject: how many classes you can skip, or how many you need to attend to get back to the minimum.' },
   { title: 'Holidays and odd days', body: 'Holidays, half days, a Saturday that follows Monday’s timetable, extra classes, and one subject taking another’s class.' },
-  { title: 'Works offline, reminds you', body: 'Mark without internet and it saves when you are back online. The Android app can remind you each evening on days with classes.' },
+  { title: 'Works offline, reminds you', body: 'Mark without internet and it saves when you are back online. The Android app can notify you when each class ends, and you can mark it straight from the notification.' },
+  { title: 'Light or dark', body: 'Use light or dark colours, or follow your phone.' },
 ];
 
 export default function Features() {
+  const styles = useStyles();
   const router = useRouter();
   return (
     <SafeAreaView style={styles.safe}>
@@ -44,7 +46,7 @@ export default function Features() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: space.xl, paddingBottom: space.xxl },
   column: { width: '100%', maxWidth: 560, alignSelf: 'center' },
@@ -56,4 +58,4 @@ const styles = StyleSheet.create({
   featureTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: space.xs },
   featureBody: { fontSize: 15, color: colors.muted, lineHeight: 22 },
   free: { fontSize: 15, color: colors.muted, marginTop: space.xl, marginBottom: space.md },
-});
+}));

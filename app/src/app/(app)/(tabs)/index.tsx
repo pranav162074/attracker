@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../../../session.tsx';
 import { prefs } from '../../../prefs';
@@ -19,7 +19,7 @@ import { OverallCard } from '../../../screens/OverallCard.tsx';
 import { SemesterHeader } from '../../../screens/SemesterHeader.tsx';
 import { OfflineNotice } from '../../../ui/OfflineNotice.tsx';
 import { LoadFailed, Loading, TabPage } from '../../../ui/Page.tsx';
-import { colors, space, tones } from '../../../ui/theme.ts';
+import { makeStyles, space } from '../../../ui/theme.ts';
 
 const loadToday = async (today: string) => {
   const { list, currentId } = await loadSemesters();
@@ -56,6 +56,7 @@ const loadToday = async (today: string) => {
 };
 
 export default function Today() {
+  const styles = useStyles();
   const router = useRouter();
   const today = localDate();
   const load = useCallback(() => loadToday(today), [today]);
@@ -142,7 +143,7 @@ export default function Today() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, tones }) => ({
   section: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: space.sm, marginBottom: space.sm },
   notice: { borderRadius: 8, padding: space.lg, marginBottom: space.lg },
   info: { backgroundColor: colors.infoBackground },
@@ -155,4 +156,4 @@ const styles = StyleSheet.create({
   empty: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.xl, alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   emptyBody: { fontSize: 14, color: colors.muted, marginTop: space.xs, textAlign: 'center', lineHeight: 20 },
-});
+}));

@@ -1,26 +1,30 @@
 import type { Ref } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import type { TextInputInstance, TextInputProps } from 'react-native';
-import { colors, space } from './theme.ts';
+import { makeStyles, space, useTheme } from './theme.ts';
 
 type Props = TextInputProps & { label: string; error?: string | undefined; hint?: string | null; ref?: Ref<TextInputInstance> };
 
-export const TextField = ({ label, error, hint, style, ref, ...input }: Props) => (
-  <View style={styles.wrap}>
-    <Text style={styles.label}>{label}</Text>
-    <TextInput
-      ref={ref}
-      style={[styles.input, error ? styles.inputError : null, style]}
-      placeholderTextColor={colors.muted}
-      aria-label={label}
-      aria-invalid={error ? true : undefined}
-      {...input}
-    />
-    {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
-  </View>
-);
+export const TextField = ({ label, error, hint, style, ref, ...input }: Props) => {
+  const { colors } = useTheme();
+  const styles = useStyles();
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        ref={ref}
+        style={[styles.input, error ? styles.inputError : null, style]}
+        placeholderTextColor={colors.muted}
+        aria-label={label}
+        aria-invalid={error ? true : undefined}
+        {...input}
+      />
+      {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
+    </View>
+  );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   wrap: { marginBottom: space.lg },
   label: { fontSize: 14, color: colors.text, marginBottom: space.xs, fontWeight: '500' },
   input: {
@@ -36,4 +40,4 @@ const styles = StyleSheet.create({
   inputError: { borderColor: colors.error },
   error: { color: colors.error, fontSize: 13, marginTop: space.xs },
   hint: { color: colors.muted, fontSize: 13, marginTop: space.xs },
-});
+}));

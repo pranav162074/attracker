@@ -1,11 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { Summary } from '../lib/api.ts';
 import { condonationMessage, findLine, missedLine, outlookMessage, sourceNote } from '../lib/dashboard.ts';
 import { lineMessage, zoneBadge } from '../lib/format.ts';
 import { Badge } from '../ui/Badge.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 export const OverallCard = ({ summary }: { summary: Summary }) => {
+  const styles = useStyles();
   const { overall } = summary;
   const badge = overall.held === 0 ? { label: 'Just started', tone: 'neutral' as const } : zoneBadge(overall.zone);
   const counts = overall.held === 0 ? 'Your percentage appears after the first class.' : [`${overall.attended} of ${overall.held} classes attended`, missedLine(overall)].filter(Boolean).join(' · ');
@@ -32,7 +33,7 @@ export const OverallCard = ({ summary }: { summary: Summary }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, marginBottom: space.lg },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   label: { fontSize: 15, color: colors.muted, fontWeight: '600' },
@@ -42,4 +43,4 @@ const styles = StyleSheet.create({
   message: { fontSize: 15, color: colors.text, marginTop: space.md, lineHeight: 21 },
   outlook: { fontSize: 14, color: colors.text, marginTop: space.md, lineHeight: 20 },
   note: { fontSize: 13, color: colors.muted, marginTop: space.md, lineHeight: 18 },
-});
+}));

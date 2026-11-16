@@ -13,7 +13,7 @@ import { OfflineNotice } from '../../../../../ui/OfflineNotice.tsx';
 import { Button } from '../../../../../ui/Button.tsx';
 import { Dot } from '../../../../../ui/Controls.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
-import { colors, space, tones } from '../../../../../ui/theme.ts';
+import { makeStyles, space, useTheme } from '../../../../../ui/theme.ts';
 
 const loadSubject = async (id: number, subjectId: number) => {
   const [summary, history, grid, subjects] = await Promise.all([api.summary(id), api.subjectHistory(id, subjectId), api.grid(id), api.subjects(id, true)]);
@@ -24,6 +24,8 @@ const loadSubject = async (id: number, subjectId: number) => {
 };
 
 const EventRow = ({ event, otherName, onPress }: { event: HistoryEvent; otherName: string | null; onPress: () => void }) => {
+  const { colors, tones } = useTheme();
+  const styles = useStyles();
   const tone = eventTone(event);
   return (
     <Pressable role="button" aria-label={eventWhen(event)} onPress={onPress} style={({ pressed }) => [styles.event, pressed ? styles.eventPressed : null]}>
@@ -41,6 +43,8 @@ const EventRow = ({ event, otherName, onPress }: { event: HistoryEvent; otherNam
 };
 
 export default function SubjectPage() {
+  const { colors, tones } = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string; subjectId: string }>();
   const timetableId = Number(params.id);
@@ -129,7 +133,7 @@ export default function SubjectPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   name: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.text },
@@ -150,4 +154,4 @@ const styles = StyleSheet.create({
   eventWhat: { fontSize: 13, color: colors.muted, marginTop: 2 },
   chevron: { fontSize: 22, color: colors.muted },
   edit: { marginTop: space.xl },
-});
+}));

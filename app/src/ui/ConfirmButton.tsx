@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Button } from './Button.tsx';
-import { colors, space } from './theme.ts';
+import { makeStyles, space } from './theme.ts';
 
 type Props = {
   title: string;
@@ -11,6 +11,7 @@ type Props = {
 };
 
 export const ConfirmButton = ({ title, question, confirmTitle, onConfirm }: Props) => {
+  const styles = useStyles();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -41,9 +42,9 @@ export const ConfirmButton = ({ title, question, confirmTitle, onConfirm }: Prop
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   box: { borderWidth: 1, borderColor: colors.error, borderRadius: 8, padding: space.lg, backgroundColor: colors.errorBackground },
   question: { fontSize: 15, color: colors.text, lineHeight: 21, marginBottom: space.md },
   actions: { flexDirection: 'row', gap: space.md },
   action: { flex: 1 },
-});
+}));

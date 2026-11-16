@@ -451,6 +451,7 @@ export const createApi = (options: ApiOptions) => {
     request,
     signup: (email: string, password: string) => request<AuthResult>('POST', '/auth/signup', { email, password, client }),
     login: (email: string, password: string) => request<AuthResult>('POST', '/auth/login', { email, password, client }),
+    google: (idToken: string) => request<AuthResult>('POST', '/auth/google', { idToken, client }),
     forgotPassword: (email: string) => request<{ message: string }>('POST', '/auth/password/forgot', { email }),
     resetPassword: (email: string, code: string, password: string) => request<AuthResult>('POST', '/auth/password/reset', { email, code, password, client }),
     me: () => request<{ user: User }>('GET', '/auth/me').then((result) => result.user),
