@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Subject } from '../lib/api.ts';
 import { checkClass, classFormFor, guessPeriods, parseTime, showTime, WEEKDAY_NAMES } from '../lib/grid.ts';
@@ -7,7 +7,7 @@ import type { ClassForm, DraftSlot } from '../lib/grid.ts';
 import { Button } from '../ui/Button.tsx';
 import { Dot } from '../ui/Controls.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 type Props = {
   title?: string;
@@ -29,6 +29,7 @@ const readsAs = (text: string) => {
 };
 
 export const ClassEditor = ({ title, doneLabel, weekday, slot, suggestion, draft, subjects, onDone, onRemove, onClose }: Props) => {
+  const styles = useStyles();
   const [form, setForm] = useState<ClassForm>(() => classFormFor(slot, suggestion));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [periodsTouched, setPeriodsTouched] = useState(slot !== null);
@@ -126,7 +127,7 @@ export const ClassEditor = ({ title, doneLabel, weekday, slot, suggestion, draft
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   safe: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md, paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: colors.surface },
   headerButton: { minWidth: 64, paddingVertical: space.sm },
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   error: { color: colors.error, fontSize: 13, marginBottom: space.xs },
   subjects: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.lg },
   subject: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: space.md, paddingVertical: space.sm, maxWidth: '100%' },
-  subjectSelected: { borderColor: colors.primary, backgroundColor: '#e8f0fb' },
+  subjectSelected: { borderColor: colors.primary, backgroundColor: colors.infoBackground },
   subjectText: { fontSize: 14, color: colors.text, flexShrink: 1 },
   subjectTextSelected: { color: colors.primary, fontWeight: '600' },
   times: { flexDirection: 'row', gap: space.md },
@@ -149,4 +150,4 @@ const styles = StyleSheet.create({
   stepValue: { minWidth: 36, textAlign: 'center', fontSize: 17, color: colors.text, fontWeight: '600' },
   note: { fontSize: 13, color: colors.muted, marginTop: space.sm, lineHeight: 18 },
   actions: { gap: space.md, marginTop: space.xl },
-});
+}));

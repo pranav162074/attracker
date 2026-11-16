@@ -1,22 +1,27 @@
-export const colors = {
-  text: '#1b1b1b',
-  muted: '#5f6368',
-  border: '#c4c7c5',
-  background: '#ffffff',
-  surface: '#f4f5f6',
-  primary: '#1d5bb8',
-  primaryPressed: '#174a96',
-  disabled: '#9aa4b2',
-  error: '#b3261e',
-  errorBackground: '#fdecea',
-  infoBackground: '#e8f0fb',
-};
+import { createContext, use } from 'react';
+import { StyleSheet } from 'react-native';
+import { themes } from '../lib/palette.ts';
+import type { Theme } from '../lib/palette.ts';
 
-export const tones = {
-  good: { text: '#1b6b2f', background: '#e5f3e8' },
-  warn: { text: '#8a4b00', background: '#fdf0dc' },
-  bad: { text: '#b3261e', background: '#fdecea' },
-  neutral: { text: '#5f6368', background: '#f1f3f4' },
+export { themes } from '../lib/palette.ts';
+export type { Colors, Scheme, Theme, Tones } from '../lib/palette.ts';
+
+export const ThemeContext = createContext<Theme>(themes.light);
+
+export const useTheme = () => use(ThemeContext);
+
+type Styles = Parameters<typeof StyleSheet.create>[0];
+
+export const makeStyles = <S extends Styles>(build: (theme: Theme) => S & Styles) => {
+  const made = new Map<Theme, Readonly<S>>();
+  return () => {
+    const theme = useTheme();
+    const known = made.get(theme);
+    if (known) return known;
+    const styles = StyleSheet.create(build(theme));
+    made.set(theme, styles);
+    return styles;
+  };
 };
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

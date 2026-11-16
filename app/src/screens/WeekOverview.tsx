@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import type { Subject } from '../lib/api.ts';
 import { showTime, WEEKDAY_SHORT } from '../lib/grid.ts';
 import type { DraftSlot } from '../lib/grid.ts';
 import { abbreviate, slotAt, weekRows } from '../lib/weekView.ts';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space, useTheme } from '../ui/theme.ts';
 
 type Props = {
   draft: DraftSlot[];
@@ -13,6 +13,8 @@ type Props = {
 };
 
 export const WeekOverview = ({ draft, days, subjects, onOpen }: Props) => {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const rows = weekRows(draft, days);
   if (rows.length === 0) return null;
   return (
@@ -53,7 +55,7 @@ export const WeekOverview = ({ draft, days, subjects, onOpen }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   wrap: { marginBottom: space.lg },
   row: { flexDirection: 'row', gap: 3, marginBottom: 3 },
   timeCell: { width: 40 },
@@ -63,4 +65,4 @@ const styles = StyleSheet.create({
   emptyCell: { borderWidth: 1, borderColor: colors.surface, borderStyle: 'dashed' },
   cellText: { fontSize: 11, color: colors.text, textAlign: 'center' },
   note: { fontSize: 12, color: colors.muted, marginTop: space.xs },
-});
+}));

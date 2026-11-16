@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { isRealIso } from '../../../../../lib/dates.ts';
 import { dayTitle, shiftDay } from '../../../../../lib/day.ts';
@@ -6,9 +6,10 @@ import { localDate } from '../../../../../lib/format.ts';
 import { DayClasses } from '../../../../../screens/DayClasses.tsx';
 import { Button } from '../../../../../ui/Button.tsx';
 import { Page } from '../../../../../ui/Page.tsx';
-import { colors, space } from '../../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../../ui/theme.ts';
 
 export default function DayScreen() {
+  const styles = useStyles();
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string; date: string }>();
   const timetableId = Number(params.id);
@@ -40,9 +41,9 @@ export default function DayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.md },
   navButton: { paddingVertical: space.sm },
   link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   holiday: { marginTop: space.xl },
-});
+}));

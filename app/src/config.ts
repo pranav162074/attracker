@@ -11,3 +11,7 @@ export const apiUrl = resolveApiUrl({
 });
 
 export const apiMode: ApiMode = Platform.OS === 'web' ? 'cookie' : 'token';
+
+const extra = (Constants.expoConfig?.extra ?? {}) as { googleWebClientId?: unknown };
+
+export const googleWebClientId = typeof extra.googleWebClientId === 'string' && extra.googleWebClientId ? extra.googleWebClientId : null;

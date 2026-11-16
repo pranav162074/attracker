@@ -17,7 +17,8 @@ import { Dot } from '../ui/Controls.tsx';
 import { ErrorNotice } from '../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted } from '../ui/Page.tsx';
 import { OfflineNotice } from '../ui/OfflineNotice.tsx';
-import { colors, space, tones } from '../ui/theme.ts';
+import { makeStyles, space, useTheme } from '../ui/theme.ts';
+import type { Theme } from '../ui/theme.ts';
 
 const CHOICES: { value: Choice; label: string }[] = [
   { value: 'present', label: 'Present' },
@@ -25,11 +26,11 @@ const CHOICES: { value: Choice; label: string }[] = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const choiceColours: Record<Choice, { background: string; text: string }> = {
-  present: { background: tones.good.text, text: '#ffffff' },
-  absent: { background: tones.bad.text, text: '#ffffff' },
-  cancelled: { background: colors.muted, text: '#ffffff' },
-};
+const choiceColoursFor = ({ colors, tones }: Theme): Record<Choice, { background: string; text: string }> => ({
+  present: { background: tones.good.text, text: colors.onTone },
+  absent: { background: tones.bad.text, text: colors.onTone },
+  cancelled: { background: colors.muted, text: colors.onTone },
+});
 
 const loadDay = async (id: number, date: string) => {
   const [subjects, day] = await Promise.all([api.subjects(id, true), api.day(id, date)]);
@@ -55,29 +56,33 @@ const Choices = ({
   busy: boolean;
   label: string;
   onChoose: (choice: Choice) => void;
-}) => (
-  <View style={styles.choices} role="radiogroup" aria-label={label}>
-    {options.map((option) => {
-      const selected = option.value === current;
-      const colour = choiceColours[option.value];
-      return (
-        <Pressable
-          key={option.value}
-          role="radio"
-          aria-checked={selected}
-          aria-label={option.label}
-          disabled={busy}
-          onPress={() => {
-            if (!selected) onChoose(option.value);
-          }}
-          style={[styles.choice, selected ? { backgroundColor: colour.background, borderColor: colour.background } : null]}
-        >
-          <Text style={[styles.choiceText, selected ? { color: colour.text } : null]}>{option.label}</Text>
-        </Pressable>
-      );
-    })}
-  </View>
-);
+}) => {
+  const styles = useStyles();
+  const choiceColours = choiceColoursFor(useTheme());
+  return (
+    <View style={styles.choices} role="radiogroup" aria-label={label}>
+      {options.map((option) => {
+        const selected = option.value === current;
+        const colour = choiceColours[option.value];
+        return (
+          <Pressable
+            key={option.value}
+            role="radio"
+            aria-checked={selected}
+            aria-label={option.label}
+            disabled={busy}
+            onPress={() => {
+              if (!selected) onChoose(option.value);
+            }}
+            style={[styles.choice, selected ? { backgroundColor: colour.background, borderColor: colour.background } : null]}
+          >
+            <Text style={[styles.choiceText, selected ? { color: colour.text } : null]}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+};
 
 const ClassRow = ({
   item,
@@ -94,6 +99,7 @@ const ClassRow = ({
   onChoose: (choice: Choice) => void;
   onMore: () => void;
 }) => {
+  const styles = useStyles();
   const subject = byId.get(item.subjectId);
   const scheduled = byId.get(item.scheduledSubjectId);
   const swapped = item.subjectId !== item.scheduledSubjectId;
@@ -137,60 +143,66 @@ const ClassRow = ({
   );
 };
 
-const MoreSheet = ({ item, name, onSubstitute, onEditExtra, onAddExtra, onClose }: { item: DayClass; name: string; onSubstitute: () => void; onEditExtra: () => void; onAddExtra: () => void; onClose: () => void }) => (
-  <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-    <Pressable style={styles.backdrop} onPress={onClose}>
-      <Pressable style={styles.sheet} onPress={() => {}}>
-        <Text style={styles.sheetTitle}>{name}</Text>
-        <Text style={styles.sheetNote}>
-          {showTime(clockToMinutes(item.start))} to {showTime(clockToMinutes(item.end))}
-        </Text>
-        {item.extraId !== null ? (
-          <Pressable role="button" onPress={onEditExtra} style={styles.sheetRow}>
-            <Text style={styles.sheetRowText}>Edit or remove this extra class</Text>
+const MoreSheet = ({ item, name, onSubstitute, onEditExtra, onAddExtra, onClose }: { item: DayClass; name: string; onSubstitute: () => void; onEditExtra: () => void; onAddExtra: () => void; onClose: () => void }) => {
+  const styles = useStyles();
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <Text style={styles.sheetTitle}>{name}</Text>
+          <Text style={styles.sheetNote}>
+            {showTime(clockToMinutes(item.start))} to {showTime(clockToMinutes(item.end))}
+          </Text>
+          {item.extraId !== null ? (
+            <Pressable role="button" onPress={onEditExtra} style={styles.sheetRow}>
+              <Text style={styles.sheetRowText}>Edit or remove this extra class</Text>
+            </Pressable>
+          ) : (
+            <Pressable role="button" onPress={onSubstitute} style={styles.sheetRow}>
+              <Text style={styles.sheetRowText}>Another subject was taught instead</Text>
+            </Pressable>
+          )}
+          <Pressable role="button" onPress={onAddExtra} style={styles.sheetRow}>
+            <Text style={styles.sheetRowText}>Add an extra class on this day</Text>
           </Pressable>
-        ) : (
-          <Pressable role="button" onPress={onSubstitute} style={styles.sheetRow}>
-            <Text style={styles.sheetRowText}>Another subject was taught instead</Text>
+          <Pressable role="button" onPress={onClose} style={styles.sheetCancel}>
+            <Text style={styles.sheetCancelText}>Close</Text>
           </Pressable>
-        )}
-        <Pressable role="button" onPress={onAddExtra} style={styles.sheetRow}>
-          <Text style={styles.sheetRowText}>Add an extra class on this day</Text>
-        </Pressable>
-        <Pressable role="button" onPress={onClose} style={styles.sheetCancel}>
-          <Text style={styles.sheetCancelText}>Close</Text>
         </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
-const SubstitutePicker = ({ item, subjects, onPick, onClose }: { item: DayClass; subjects: Subject[]; onPick: (subjectId: number) => void; onClose: () => void }) => (
-  <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-    <Pressable style={styles.backdrop} onPress={onClose}>
-      <Pressable style={styles.sheet} onPress={() => {}}>
-        <Text style={styles.sheetTitle}>Who took this class?</Text>
-        <Text style={styles.sheetNote}>Pick the subject that was actually taught. Attendance counts for that subject instead.</Text>
-        <ScrollView style={styles.sheetList}>
-          {subjects
-            .filter((subject) => !subject.archived)
-            .map((subject) => (
-              <Pressable key={subject.id} role="button" aria-label={subject.name} onPress={() => onPick(subject.id)} style={styles.sheetRow}>
-                <Dot colour={subject.colour} />
-                <Text style={[styles.sheetRowText, subject.id === item.subjectId ? styles.sheetRowCurrent : null]}>
-                  {subject.name}
-                  {subject.id === item.scheduledSubjectId ? ' (as scheduled)' : ''}
-                </Text>
-              </Pressable>
-            ))}
-        </ScrollView>
-        <Pressable role="button" onPress={onClose} style={styles.sheetCancel}>
-          <Text style={styles.sheetCancelText}>Cancel</Text>
+const SubstitutePicker = ({ item, subjects, onPick, onClose }: { item: DayClass; subjects: Subject[]; onPick: (subjectId: number) => void; onClose: () => void }) => {
+  const styles = useStyles();
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <Text style={styles.sheetTitle}>Who took this class?</Text>
+          <Text style={styles.sheetNote}>Pick the subject that was actually taught. Attendance counts for that subject instead.</Text>
+          <ScrollView style={styles.sheetList}>
+            {subjects
+              .filter((subject) => !subject.archived)
+              .map((subject) => (
+                <Pressable key={subject.id} role="button" aria-label={subject.name} onPress={() => onPick(subject.id)} style={styles.sheetRow}>
+                  <Dot colour={subject.colour} />
+                  <Text style={[styles.sheetRowText, subject.id === item.subjectId ? styles.sheetRowCurrent : null]}>
+                    {subject.name}
+                    {subject.id === item.scheduledSubjectId ? ' (as scheduled)' : ''}
+                  </Text>
+                </Pressable>
+              ))}
+          </ScrollView>
+          <Pressable role="button" onPress={onClose} style={styles.sheetCancel}>
+            <Text style={styles.sheetCancelText}>Cancel</Text>
+          </Pressable>
         </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 type Props = {
   timetableId: number;
@@ -202,6 +214,7 @@ type Props = {
 };
 
 export const DayClasses = ({ timetableId, date, empty, onChanged, follow, showAddExtra = true }: Props) => {
+  const styles = useStyles();
   const load = useCallback(() => loadDay(timetableId, date), [timetableId, date]);
   const finish = useCallback((loaded: Awaited<ReturnType<typeof loadDay>>) => withPending(timetableId, date, loaded), [timetableId, date]);
   const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, `day.${timetableId}.${date}`, finish, follow);
@@ -343,7 +356,7 @@ export const DayClasses = ({ timetableId, date, empty, onChanged, follow, showAd
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   list: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden', marginTop: space.sm },
   row: { padding: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, backgroundColor: colors.background },
   rowBusy: { opacity: 0.5 },
@@ -363,7 +376,7 @@ const styles = StyleSheet.create({
   moreText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
   totals: { fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: space.md },
   addExtra: { alignSelf: 'flex-start', paddingVertical: space.md },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: space.lg },
+  backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'center', padding: space.lg },
   sheet: { backgroundColor: colors.background, borderRadius: 10, padding: space.lg, width: '100%', maxWidth: 420, maxHeight: '80%', alignSelf: 'center' },
   sheetTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   sheetNote: { fontSize: 13, color: colors.muted, marginTop: space.xs, marginBottom: space.sm, lineHeight: 18 },
@@ -373,4 +386,4 @@ const styles = StyleSheet.create({
   sheetRowCurrent: { fontWeight: '700' },
   sheetCancel: { alignSelf: 'flex-end', paddingVertical: space.sm, paddingHorizontal: space.md, marginTop: space.sm },
   sheetCancelText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
-});
+}));

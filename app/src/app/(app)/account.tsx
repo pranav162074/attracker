@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api, useSession } from '../../session.tsx';
 import { problemFrom } from '../../lib/forms.ts';
 import { Button } from '../../ui/Button.tsx';
 import { stopReminders } from '../../reminderSync.ts';
 import { ErrorNotice } from '../../ui/Notice.tsx';
-import { colors, space } from '../../ui/theme.ts';
+import { makeStyles, space } from '../../ui/theme.ts';
 
 export default function Account() {
+  const styles = useStyles();
   const { state, logOut } = useSession();
   const [busy, setBusy] = useState<'here' | 'everywhere' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -49,11 +50,11 @@ export default function Account() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   safe: { flex: 1, backgroundColor: colors.background },
   body: { padding: space.xl, width: '100%', maxWidth: 640, alignSelf: 'center' },
   label: { fontSize: 14, color: colors.muted },
   email: { fontSize: 17, color: colors.text, marginTop: space.xs, marginBottom: space.xl },
   actions: { gap: space.md },
   note: { fontSize: 13, color: colors.muted, marginTop: space.md },
-});
+}));

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../session.tsx';
 import { problemFrom } from '../lib/forms.ts';
@@ -8,9 +8,10 @@ import { blockedBy, neighbourStep, SETUP_STEPS, setupPath, stepNumber } from '..
 import type { SetupRoute } from '../lib/semester.ts';
 import { Button } from '../ui/Button.tsx';
 import { ErrorNotice } from '../ui/Notice.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 export const SetupProgress = ({ route }: { route: SetupRoute }) => {
+  const styles = useStyles();
   const number = stepNumber(route);
   return (
     <View style={styles.progress} aria-label={`Step ${number} of ${SETUP_STEPS}`}>
@@ -34,6 +35,7 @@ type FooterProps = {
 };
 
 export const SetupFooter = ({ timetableId, route, nextLabel = 'Next', beforeNext }: FooterProps) => {
+  const styles = useStyles();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -79,16 +81,19 @@ export const SetupFooter = ({ timetableId, route, nextLabel = 'Next', beforeNext
   );
 };
 
-export const SetupIntro = ({ title, children }: { title: string; children: ReactNode }) => (
-  <View style={styles.intro}>
-    <Text style={styles.title} role="heading">
-      {title}
-    </Text>
-    <Text style={styles.lead}>{children}</Text>
-  </View>
-);
+export const SetupIntro = ({ title, children }: { title: string; children: ReactNode }) => {
+  const styles = useStyles();
+  return (
+    <View style={styles.intro}>
+      <Text style={styles.title} role="heading">
+        {title}
+      </Text>
+      <Text style={styles.lead}>{children}</Text>
+    </View>
+  );
+};
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   progress: { marginBottom: space.lg },
   bars: { flexDirection: 'row', gap: 6 },
   bar: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.surface },
@@ -100,4 +105,4 @@ const styles = StyleSheet.create({
   intro: { marginBottom: space.lg },
   title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: space.xs },
   lead: { fontSize: 15, color: colors.muted, lineHeight: 22 },
-});
+}));

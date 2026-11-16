@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { formatDate, MONTHS, monthGrid, parseIso, shiftMonth, WEEKDAY_LETTERS } from '../lib/dates.ts';
 import { localDate } from '../lib/format.ts';
-import { colors, space } from './theme.ts';
+import { makeStyles, space } from './theme.ts';
 
 type Props = {
   label: string;
@@ -15,6 +15,7 @@ type Props = {
 };
 
 const Calendar = ({ value, near, onPick }: { value: string | null; near: string | null; onPick: (iso: string) => void }) => {
+  const styles = useStyles();
   const today = localDate();
   const [view, setView] = useState(() => {
     const { year, month } = parseIso(value ?? near ?? today);
@@ -74,6 +75,7 @@ const Calendar = ({ value, near, onPick }: { value: string | null; near: string 
 };
 
 export const DateField = ({ label, value, onChange, error, optional = false, hint, near = null }: Props) => {
+  const styles = useStyles();
   const [open, setOpen] = useState(false);
   return (
     <View style={styles.wrap}>
@@ -118,7 +120,7 @@ export const DateField = ({ label, value, onChange, error, optional = false, hin
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   wrap: { marginBottom: space.lg },
   label: { fontSize: 14, color: colors.text, marginBottom: space.xs, fontWeight: '500' },
   field: { borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: space.md, paddingVertical: 11 },
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
   placeholder: { fontSize: 16, color: colors.muted },
   error: { color: colors.error, fontSize: 13, marginTop: space.xs },
   hint: { color: colors.muted, fontSize: 13, marginTop: space.xs },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: space.lg },
+  backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'center', padding: space.lg },
   sheet: { backgroundColor: colors.background, borderRadius: 10, padding: space.lg, width: '100%', maxWidth: 380, alignSelf: 'center' },
   sheetTitle: { fontSize: 15, color: colors.muted, marginBottom: space.sm },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },
@@ -141,8 +143,8 @@ const styles = StyleSheet.create({
   dayText: { fontSize: 15, color: colors.text },
   dayOutside: { color: colors.disabled },
   dayToday: { color: colors.primary, fontWeight: '700' },
-  dayTextSelected: { color: '#ffffff', fontWeight: '600' },
+  dayTextSelected: { color: colors.onPrimary, fontWeight: '600' },
   sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm, marginTop: space.sm },
   sheetButton: { paddingHorizontal: space.md, paddingVertical: space.sm },
   sheetButtonText: { fontSize: 15, color: colors.primary, fontWeight: '600' },
-});
+}));

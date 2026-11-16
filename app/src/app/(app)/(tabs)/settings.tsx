@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, useSession } from '../../../session.tsx';
 import { chooseSemester, loadSemesters } from '../../../currentSemester.ts';
@@ -15,7 +15,9 @@ import { ConfirmButton } from '../../../ui/ConfirmButton.tsx';
 import { ListBox, ListRow } from '../../../ui/Controls.tsx';
 import { ErrorNotice } from '../../../ui/Notice.tsx';
 import { LoadFailed, Loading, TabPage } from '../../../ui/Page.tsx';
-import { colors, space } from '../../../ui/theme.ts';
+import { makeStyles, space } from '../../../ui/theme.ts';
+import { appearanceLabel } from '../../../lib/appearance.ts';
+import { useAppearance } from '../../../themeChoice.tsx';
 
 const loadSettings = async () => {
   const [{ list, currentId }, reminders] = await Promise.all([loadSemesters(), loadReminderSettings()]);
@@ -25,9 +27,14 @@ const loadSettings = async () => {
   return { list, currentId, current, timetable, setup, reminders };
 };
 
-const Group = ({ title }: { title: string }) => <Text style={styles.group}>{title}</Text>;
+const Group = ({ title }: { title: string }) => {
+  const styles = useStyles();
+  return <Text style={styles.group}>{title}</Text>;
+};
 
 export default function SettingsTab() {
+  const styles = useStyles();
+  const { appearance } = useAppearance();
   const router = useRouter();
   const { state } = useSession();
   const load = useCallback(() => loadSettings(), []);
@@ -74,6 +81,7 @@ export default function SettingsTab() {
       <Group title="App" />
       <ListBox>
         <ListRow title="Reminders" detail={notificationsSupported ? reminderSummary(reminders, null) : 'Available in the Android app'} onPress={() => router.push('/reminders')} />
+        <ListRow title="Appearance" detail={appearanceLabel(appearance)} onPress={() => router.push('/appearance')} />
         <ListRow title="Account" detail={email} onPress={() => router.push('/account')} />
       </ListBox>
 
@@ -96,8 +104,8 @@ export default function SettingsTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   group: { fontSize: 13, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', marginTop: space.md, marginBottom: space.sm },
   gap: { height: space.lg },
   danger: { marginTop: space.xl },
-});
+}));

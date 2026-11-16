@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { TextInputInstance } from 'react-native';
 import { Link } from 'expo-router';
 import { useSession } from '../session.tsx';
@@ -7,12 +7,14 @@ import { checkLogin, normaliseEmail, problemFrom } from '../lib/forms.ts';
 import type { FieldErrors } from '../lib/api.ts';
 import { Button } from '../ui/Button.tsx';
 import { FormScreen } from '../ui/FormScreen.tsx';
+import { OrGoogle } from '../ui/OrGoogle.tsx';
 import { ErrorNotice } from '../ui/Notice.tsx';
 import { TextField } from '../ui/TextField.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 export default function Login() {
-  const { logIn } = useSession();
+  const styles = useStyles();
+  const { logIn, logInWithGoogle } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fields, setFields] = useState<FieldErrors>({});
@@ -34,6 +36,16 @@ export default function Login() {
       setFields(problem.fields);
       setMessage(problem.message);
       setBusy(false);
+    }
+  };
+
+
+  const google = async (idToken: string) => {
+    setMessage(null);
+    try {
+      await logInWithGoogle(idToken);
+    } catch (error) {
+      setMessage(problemFrom(error).message ?? 'Google sign-in did not work. Please try again.');
     }
   };
 
@@ -69,6 +81,7 @@ export default function Login() {
         onSubmitEditing={submit}
       />
       <Button title="Log in" onPress={submit} busy={busy} />
+      <OrGoogle onToken={google} onProblem={setMessage} />
       <Link href={{ pathname: '/forgot', params: email.trim() ? { email: normaliseEmail(email) } : {} }} style={[styles.link, styles.forgot]}>
         Forgot password?
       </Link>
@@ -82,9 +95,9 @@ export default function Login() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: space.xl },
   footerText: { color: colors.muted, fontSize: 15 },
   link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   forgot: { alignSelf: 'center', marginTop: space.lg },
-});
+}));

@@ -1,37 +1,42 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '../ui/Badge.tsx';
 import { Button } from '../ui/Button.tsx';
-import { colors, space, tones } from '../ui/theme.ts';
+import { makeStyles, space, useTheme } from '../ui/theme.ts';
 
-const Example = () => (
-  <View style={styles.example} aria-label="Example of what attracker shows">
-    <View style={styles.exampleTop}>
-      <Text style={styles.exampleLabel}>Overall</Text>
-      <Badge label="On track" tone="good" />
+const Example = () => {
+  const { colors, tones } = useTheme();
+  const styles = useStyles();
+  return (
+    <View style={styles.example} aria-label="Example of what attracker shows">
+      <View style={styles.exampleTop}>
+        <Text style={styles.exampleLabel}>Overall</Text>
+        <Badge label="On track" tone="good" />
+      </View>
+      <Text style={styles.examplePercent}>78.40%</Text>
+      <Text style={styles.exampleMuted}>196 of 250 attended · Missed 54 classes</Text>
+      <Text style={styles.exampleLine}>You can miss 11 classes and stay at 75% or above.</Text>
+      <View style={styles.exampleRows}>
+        <View style={styles.exampleRow}>
+          <Text style={styles.exampleSubject}>Computer Networks</Text>
+          <Text style={[styles.exampleValue, { color: colors.text }]}>81.25%</Text>
+        </View>
+        <View style={styles.exampleRow}>
+          <Text style={styles.exampleSubject}>Networks Lab</Text>
+          <Text style={[styles.exampleValue, { color: colors.text }]}>88.88%</Text>
+        </View>
+        <View style={[styles.exampleRow, styles.exampleLast]}>
+          <Text style={styles.exampleSubject}>Data Mining</Text>
+          <Text style={[styles.exampleValue, { color: tones.bad.text }]}>69.04%</Text>
+        </View>
+      </View>
     </View>
-    <Text style={styles.examplePercent}>78.40%</Text>
-    <Text style={styles.exampleMuted}>196 of 250 attended · Missed 54 classes</Text>
-    <Text style={styles.exampleLine}>You can miss 11 classes and stay at 75% or above.</Text>
-    <View style={styles.exampleRows}>
-      <View style={styles.exampleRow}>
-        <Text style={styles.exampleSubject}>Computer Networks</Text>
-        <Text style={[styles.exampleValue, { color: colors.text }]}>81.25%</Text>
-      </View>
-      <View style={styles.exampleRow}>
-        <Text style={styles.exampleSubject}>Networks Lab</Text>
-        <Text style={[styles.exampleValue, { color: colors.text }]}>88.88%</Text>
-      </View>
-      <View style={[styles.exampleRow, styles.exampleLast]}>
-        <Text style={styles.exampleSubject}>Data Mining</Text>
-        <Text style={[styles.exampleValue, { color: tones.bad.text }]}>69.04%</Text>
-      </View>
-    </View>
-  </View>
-);
+  );
+};
 
 export default function Welcome() {
+  const styles = useStyles();
   const router = useRouter();
   return (
     <SafeAreaView style={styles.safe}>
@@ -58,13 +63,16 @@ export default function Welcome() {
           <Link href="/features" style={styles.more}>
             See everything attracker does →
           </Link>
+          <Link href="/privacy" style={styles.privacy}>
+            Privacy
+          </Link>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: space.xl, paddingBottom: space.xxl },
   column: { width: '100%', maxWidth: 560, alignSelf: 'center' },
@@ -86,4 +94,5 @@ const styles = StyleSheet.create({
   exampleSubject: { fontSize: 15, color: colors.text },
   exampleValue: { fontSize: 15, fontWeight: '600' },
   more: { alignSelf: 'center', marginTop: space.xl, fontSize: 15, fontWeight: '600', color: colors.primary },
-});
+  privacy: { fontSize: 14, color: colors.muted, marginTop: space.xl, textDecorationLine: 'underline' },
+}));

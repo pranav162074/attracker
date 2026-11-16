@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../../session.tsx';
 import type { Checkpoint } from '../../../../../lib/api.ts';
@@ -10,9 +10,10 @@ import { Button } from '../../../../../ui/Button.tsx';
 import { ConfirmButton } from '../../../../../ui/ConfirmButton.tsx';
 import { ErrorNotice } from '../../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
-import { colors, space, tones } from '../../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../../ui/theme.ts';
 
 const Saved = ({ checkpoint, latest, names, onDelete }: { checkpoint: Checkpoint; latest: boolean; names: Map<number, string>; onDelete: () => Promise<void> }) => {
+  const styles = useStyles();
   const totals = checkpointTotals(checkpoint);
   return (
     <View style={styles.card}>
@@ -52,6 +53,7 @@ const loadAll = async (id: number) => {
 };
 
 export default function OfficialNumbers() {
+  const styles = useStyles();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const timetableId = Number(id);
@@ -101,7 +103,7 @@ export default function OfficialNumbers() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, tones }) => ({
   actions: { gap: space.md, marginBottom: space.md },
   card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, marginBottom: space.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space.md },
@@ -110,4 +112,4 @@ const styles = StyleSheet.create({
   cardTotal: { fontSize: 15, color: colors.text, marginTop: space.sm, marginBottom: space.xs },
   cardLine: { fontSize: 13, color: colors.muted, marginTop: 2 },
   cardActions: { marginTop: space.md },
-});
+}));

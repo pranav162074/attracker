@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Share, StyleSheet, Text, View } from 'react-native';
+import { Share, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api } from '../../../../session.tsx';
 import { problemFrom } from '../../../../lib/forms.ts';
@@ -8,7 +8,7 @@ import { useLoad } from '../../../../useLoad.ts';
 import { Button } from '../../../../ui/Button.tsx';
 import { ErrorNotice } from '../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page } from '../../../../ui/Page.tsx';
-import { colors, space } from '../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../ui/theme.ts';
 
 const loadShare = async (id: number) => {
   const [timetable, code] = await Promise.all([api.timetable(id), api.shareCode(id)]);
@@ -16,6 +16,7 @@ const loadShare = async (id: number) => {
 };
 
 export default function ShareScreen() {
+  const styles = useStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const timetableId = Number(id);
   const load = useCallback(() => loadShare(timetableId), [timetableId]);
@@ -75,10 +76,10 @@ export default function ShareScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: space.md },
   box: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, gap: space.md, marginTop: space.sm },
   label: { fontSize: 14, fontWeight: '600', color: colors.muted },
   code: { fontSize: 32, fontWeight: '700', letterSpacing: 3, color: colors.text, fontVariant: ['tabular-nums'] },
   note: { fontSize: 13, color: colors.muted, lineHeight: 18 },
-});
+}));

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { api } from '../../../../../session.tsx';
@@ -14,7 +14,7 @@ import { Button } from '../../../../../ui/Button.tsx';
 import { ErrorNotice } from '../../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
 import { TextField } from '../../../../../ui/TextField.tsx';
-import { colors, space, tones } from '../../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../../ui/theme.ts';
 
 const SHEET_TYPES = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'];
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -31,6 +31,7 @@ const readFile = async (asset: DocumentPicker.DocumentPickerAsset): Promise<Blob
 };
 
 const Found = ({ preview, names }: { preview: SheetPreview; names: Map<number, string> }) => {
+  const styles = useStyles();
   const unused = unusedSheetSubjects(preview);
   const percent = preview.totals.held !== null && preview.totals.attended !== null ? truncatedPercent(preview.totals.attended, preview.totals.held) : null;
   return (
@@ -62,6 +63,7 @@ const Found = ({ preview, names }: { preview: SheetPreview; names: Map<number, s
 };
 
 export default function ReadSheet() {
+  const styles = useStyles();
   const { id, setup } = useLocalSearchParams<{ id: string; setup?: string }>();
   const timetableId = Number(id);
   const load = useCallback(() => loadAll(timetableId), [timetableId]);
@@ -149,10 +151,10 @@ export default function ReadSheet() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, tones }) => ({
   found: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, marginBottom: space.md },
   foundTitle: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: space.xs },
   foundLine: { fontSize: 13, color: colors.muted, marginTop: 2 },
   warn: { fontSize: 13, color: tones.warn.text, marginTop: space.sm, lineHeight: 18 },
   again: { marginTop: space.md },
-});
+}));

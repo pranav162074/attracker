@@ -3,6 +3,8 @@ import { SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '../session.tsx';
+import { ThemeChoiceProvider } from '../themeChoice.tsx';
+import { useTheme } from '../ui/theme.ts';
 import { Unreachable } from '../screens/Unreachable.tsx';
 import { WakingBar, WakingScreen } from '../ui/WakingNotice.tsx';
 import { useWaking } from '../waking.ts';
@@ -11,6 +13,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const RootNavigator = () => {
   const { state } = useSession();
+  const { colors } = useTheme();
   const waking = useWaking();
   const loading = state.status === 'loading';
   useEffect(() => {
@@ -20,7 +23,7 @@ const RootNavigator = () => {
   if (state.status === 'unreachable') return <Unreachable message={state.message} />;
   const signedIn = state.status === 'signedIn';
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Protected guard={signedIn} redirectTo="/welcome">
         <Stack.Screen name="(app)" />
       </Stack.Protected>
@@ -31,6 +34,7 @@ const RootNavigator = () => {
         <Stack.Screen name="signup" />
         <Stack.Screen name="forgot" />
       </Stack.Protected>
+      <Stack.Screen name="privacy" />
     </Stack>
   );
 };
@@ -41,14 +45,21 @@ const Waking = () => {
   return waking && state.status !== 'loading' ? <WakingBar /> : null;
 };
 
+const Bar = () => {
+  const { scheme } = useTheme();
+  return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
+};
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <SessionProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
-        <Waking />
-      </SessionProvider>
+      <ThemeChoiceProvider>
+        <SessionProvider>
+          <Bar />
+          <RootNavigator />
+          <Waking />
+        </SessionProvider>
+      </ThemeChoiceProvider>
     </SafeAreaProvider>
   );
 }

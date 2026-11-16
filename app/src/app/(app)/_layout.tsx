@@ -1,8 +1,9 @@
 import { Stack } from 'expo-router';
 import { useReminderResponses } from '../../reminderResponses';
-import { colors } from '../../ui/theme.ts';
+import { useTheme } from '../../ui/theme.ts';
 
 export default function SignedInLayout() {
+  const { colors } = useTheme();
   useReminderResponses();
   return (
     <Stack
@@ -18,6 +19,7 @@ export default function SignedInLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'attracker' }} />
       <Stack.Screen name="account" options={{ title: 'Account' }} />
       <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
+      <Stack.Screen name="appearance" options={{ title: 'Appearance' }} />
       <Stack.Screen name="timetables/new" options={{ title: 'New semester' }} />
       <Stack.Screen name="timetables/copy" options={{ title: 'Copy a timetable' }} />
       <Stack.Screen name="timetables/[id]/share" options={{ title: 'Share' }} />

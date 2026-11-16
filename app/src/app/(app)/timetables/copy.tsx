@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '../../../session.tsx';
 import { chooseSemester } from '../../../currentSemester.ts';
@@ -12,9 +12,10 @@ import { Button } from '../../../ui/Button.tsx';
 import { ErrorNotice } from '../../../ui/Notice.tsx';
 import { Muted, Page } from '../../../ui/Page.tsx';
 import { TextField } from '../../../ui/TextField.tsx';
-import { colors, space } from '../../../ui/theme.ts';
+import { makeStyles, space } from '../../../ui/theme.ts';
 
 export default function CopyTimetable() {
+  const styles = useStyles();
   const router = useRouter();
   const [codeText, setCodeText] = useState('');
   const [preview, setPreview] = useState<SharedPreview | null>(null);
@@ -112,10 +113,10 @@ export default function CopyTimetable() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: space.md },
   preview: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.lg, marginBottom: space.lg, gap: space.xs },
   previewName: { fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: space.xs },
   previewLine: { fontSize: 14, color: colors.text },
   subjects: { fontSize: 13, color: colors.muted, marginTop: space.sm, lineHeight: 18 },
-});
+}));

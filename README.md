@@ -51,7 +51,7 @@ Visitors who are not logged in see the welcome page, a page listing what attrack
 - **Today:** the overall percentage and what it means, notices (how marking works, days before tracking started, the last class day nobody checked), and today's classes with Present, Absent and Cancelled buttons. More covers a different subject being taught and extra classes.
 - **Subjects:** each subject's percentage, the ones needing attention first, and what each one needs.
 - **Calendar:** the month, tapping a day to mark it or turn it into a holiday.
-- **Settings:** the semester's dates and rules, subjects, weekly timetable, holidays, attendance from college, sharing with classmates, reminders, the account, adding a semester and deleting this one.
+- **Settings:** the semester's dates and rules, subjects, weekly timetable, holidays, attendance from college, sharing with classmates, reminders, appearance (light, dark or the same as the phone), the account, adding a semester and deleting this one.
 
 A classmate's timetable can be copied with their share code instead (Settings, Share with classmates), which fills in the steps below for review. A new semester is set up in five steps with Back and Next: dates and rules, subjects, the weekly timetable (with a week-at-a-glance grid), holidays, and whether classes have already started, which leads to entering the college's attendance from the sheet, per subject or as an overall percentage before tracking starts.
 
@@ -156,6 +156,8 @@ The database tests need a migrated PostgreSQL on this machine (set `DATABASE_URL
 Passwords are hashed with scrypt (N = 32768), and the parameters are stored with each hash so they can be raised later without breaking old ones. A wrong password and an unknown email get the same answer.
 
 Continue with Google takes the ID token the website or app gets from Google. The API checks it with Google's own library: signature against Google's published keys, issuer, expiry, that it was issued for one of `GOOGLE_CLIENT_IDS`, and that the email is verified. The first sign-in creates an account without a password; if an account with that email already exists, Google is linked to it, so both ways of signing in reach the same account.
+
+The website shows Google's own button (Google Identity Services) and the Android app uses the native Google sign-in. Both ask Google for a token for the web client, whose ID is `expo.extra.googleWebClientId` in `app/app.json` and goes in `GOOGLE_CLIENT_IDS` on the server. Google Cloud also needs the website's address as an authorised JavaScript origin, and an Android client with the package `app.attracker` and the SHA-1 of the signing key (`npx eas-cli credentials`). The privacy page linked from the consent screen is `/privacy`.
 
 Forgot password emails a 6-digit code that works for 15 minutes. The answer is the same whether or not the email has an account, and the email is sent after the answer goes out, so timing gives nothing away either. Only a hash of the code is stored, a newer code replaces the older one, and five wrong tries use it up. Setting the new password logs out every device and logs this one in. Someone who signed up with Google can use it to add a password. Codes are limited to 3 an hour per email and 10 an hour per address. Email goes out through Brevo or Resend (`EMAIL_TRANSPORT`); in development the code is printed in the API log instead, and a production server with no email service answers 503.
 

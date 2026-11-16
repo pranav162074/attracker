@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../session.tsx';
 import { formatDate } from '../../../../lib/dates.ts';
@@ -12,18 +12,22 @@ import { SetupIntro, SetupProgress } from '../../../../screens/SetupFrame.tsx';
 import { Button } from '../../../../ui/Button.tsx';
 import { ErrorNotice } from '../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Page } from '../../../../ui/Page.tsx';
-import { colors, space } from '../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../ui/theme.ts';
 
 type Answer = 'no' | 'sheet' | 'manual' | 'overall' | 'none';
 
-const Option = ({ title, detail, selected, onPress }: { title: string; detail?: string; selected: boolean; onPress: () => void }) => (
-  <Pressable role="radio" aria-checked={selected} aria-label={title} onPress={onPress} style={[styles.option, selected ? styles.selected : null]}>
-    <Text style={styles.optionTitle}>{title}</Text>
-    {detail ? <Text style={styles.optionDetail}>{detail}</Text> : null}
-  </Pressable>
-);
+const Option = ({ title, detail, selected, onPress }: { title: string; detail?: string; selected: boolean; onPress: () => void }) => {
+  const styles = useStyles();
+  return (
+    <Pressable role="radio" aria-checked={selected} aria-label={title} onPress={onPress} style={[styles.option, selected ? styles.selected : null]}>
+      <Text style={styles.optionTitle}>{title}</Text>
+      {detail ? <Text style={styles.optionDetail}>{detail}</Text> : null}
+    </Pressable>
+  );
+};
 
 export default function Started() {
+  const styles = useStyles();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const timetableId = Number(id);
@@ -99,7 +103,7 @@ export default function Started() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   option: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -124,4 +128,4 @@ const styles = StyleSheet.create({
   },
   buttons: { flexDirection: 'row', gap: space.md, marginTop: space.xl },
   button: { flex: 1 },
-});
+}));

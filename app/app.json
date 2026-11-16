@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
@@ -31,6 +31,12 @@
           "imageWidth": 160,
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.579231533120-3kblk8981ql6p2ikfd63bs68qc7hd008"
+        }
       ]
     ],
     "scheme": "attracker",
@@ -46,7 +52,8 @@
       },
       "eas": {
         "projectId": "d206f419-fc90-454a-9bf0-865e461283b3"
-      }
+      },
+      "googleWebClientId": "579231533120-3kblk8981ql6p2ikfd63bs68qc7hd008.apps.googleusercontent.com"
     },
     "owner": "pranav162074"
   }

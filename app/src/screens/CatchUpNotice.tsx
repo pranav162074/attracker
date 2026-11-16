@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { CatchUp } from '../lib/catchUp.ts';
 import { catchUpText } from '../lib/catchUp.ts';
 import { Button } from '../ui/Button.tsx';
-import { colors, space, tones } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 type Props = {
   catchUp: CatchUp;
@@ -13,6 +13,7 @@ type Props = {
 };
 
 export const CatchUpNotice = ({ catchUp, withClasses, onMark, onOfficial, onDone }: Props) => {
+  const styles = useStyles();
   const text = catchUpText(catchUp, withClasses);
   return (
     <View style={styles.box} role="region" aria-label={text.title}>
@@ -27,9 +28,9 @@ export const CatchUpNotice = ({ catchUp, withClasses, onMark, onOfficial, onDone
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, tones }) => ({
   box: { backgroundColor: tones.warn.background, borderRadius: 8, padding: space.lg, marginBottom: space.lg },
   title: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: space.xs },
   body: { fontSize: 14, color: colors.text, lineHeight: 20 },
   actions: { gap: space.sm, marginTop: space.md },
-});
+}));

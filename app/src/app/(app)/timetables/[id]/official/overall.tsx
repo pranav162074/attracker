@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../../../../session.tsx';
 import { isSetup, startAndOpen } from '../../../../../setupFlow.ts';
@@ -15,9 +15,10 @@ import { DateField } from '../../../../../ui/DateField.tsx';
 import { ErrorNotice } from '../../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page } from '../../../../../ui/Page.tsx';
 import { TextField } from '../../../../../ui/TextField.tsx';
-import { colors, space } from '../../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../../ui/theme.ts';
 
 const Editor = ({ timetable, setup }: { timetable: Timetable; setup: boolean }) => {
+  const styles = useStyles();
   const router = useRouter();
   const today = localDate();
   const [form, setForm] = useState<OverallForm>({ asOf: null, percent: '', held: '' });
@@ -123,7 +124,7 @@ export default function OverallOfficialNumbers() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   preview: { backgroundColor: colors.surface, borderRadius: 8, padding: space.md, marginBottom: space.lg },
   previewText: { fontSize: 14, color: colors.text, lineHeight: 20 },
-});
+}));

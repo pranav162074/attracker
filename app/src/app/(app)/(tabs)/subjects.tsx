@@ -11,7 +11,7 @@ import { SemesterHeader } from '../../../screens/SemesterHeader.tsx';
 import { Dot } from '../../../ui/Controls.tsx';
 import { OfflineNotice } from '../../../ui/OfflineNotice.tsx';
 import { LoadFailed, Loading, Muted, TabPage } from '../../../ui/Page.tsx';
-import { colors, space, tones } from '../../../ui/theme.ts';
+import { makeStyles, space, useTheme } from '../../../ui/theme.ts';
 
 const loadSubjects = async () => {
   const { list, currentId } = await loadSemesters();
@@ -22,6 +22,8 @@ const loadSubjects = async () => {
 };
 
 export default function SubjectsTab() {
+  const { colors, tones } = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const load = useCallback(() => loadSubjects(), []);
   const { data, error, loading, refreshing, refresh, savedAt } = useLoad(load, 'subjects-tab');
@@ -79,7 +81,7 @@ export default function SubjectsTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   list: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   pressed: { backgroundColor: colors.surface },
@@ -90,4 +92,4 @@ const styles = StyleSheet.create({
   percent: { fontSize: 16, fontWeight: '700' },
   chevron: { fontSize: 20, color: colors.muted },
   foot: { fontSize: 13, color: colors.muted, marginTop: space.md, lineHeight: 18 },
-});
+}));

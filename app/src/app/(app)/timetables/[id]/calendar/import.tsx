@@ -11,11 +11,12 @@ import { ListBox } from '../../../../../ui/Controls.tsx';
 import { ErrorNotice } from '../../../../../ui/Notice.tsx';
 import { Muted, Page, SectionTitle } from '../../../../../ui/Page.tsx';
 import { TextField } from '../../../../../ui/TextField.tsx';
-import { colors, space, tones } from '../../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../../ui/theme.ts';
 
 type Found = ImportPreview['holidays'][number];
 
 const Row = ({ holiday, checked, onToggle }: { holiday: Found; checked: boolean; onToggle: () => void }) => {
+  const styles = useStyles();
   const blocked = holiday.problems.length > 0;
   return (
     <Pressable
@@ -47,6 +48,7 @@ const Row = ({ holiday, checked, onToggle }: { holiday: Found; checked: boolean;
 };
 
 export default function ImportHolidays() {
+  const styles = useStyles();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const timetableId = Number(id);
@@ -147,7 +149,7 @@ export default function ImportHolidays() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, tones }) => ({
   paste: { minHeight: 160, fontSize: 14 },
   row: {
     flexDirection: 'row',
@@ -162,7 +164,7 @@ const styles = StyleSheet.create({
   box: { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   boxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   boxBlocked: { backgroundColor: colors.surface, borderColor: colors.surface },
-  tick: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
+  tick: { color: colors.onPrimary, fontSize: 14, fontWeight: '700' },
   rowText: { flex: 1 },
   rowTitle: { fontSize: 15, color: colors.text, fontWeight: '500' },
   blockedText: { color: colors.muted },
@@ -173,4 +175,4 @@ const styles = StyleSheet.create({
   skippedTitle: { fontSize: 13, color: colors.muted, marginBottom: space.xs },
   skippedLine: { fontSize: 13, color: colors.muted },
   save: { marginTop: space.xl },
-});
+}));

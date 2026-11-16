@@ -1,8 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { offlineNote } from '../lib/offline.ts';
-import { colors, space, tones } from './theme.ts';
+import { makeStyles, space } from './theme.ts';
 
 export const OfflineNotice = ({ savedAt, queued = 0 }: { savedAt: string | null; queued?: number }) => {
+  const styles = useStyles();
   if (!savedAt && queued === 0) return null;
   return (
     <View style={styles.box} role="status">
@@ -16,7 +17,7 @@ export const OfflineNotice = ({ savedAt, queued = 0 }: { savedAt: string | null;
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, tones }) => ({
   box: { backgroundColor: tones.warn.background, borderRadius: 6, padding: space.md, marginBottom: space.lg, gap: space.xs },
   text: { color: colors.text, fontSize: 14, lineHeight: 20 },
-});
+}));

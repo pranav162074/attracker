@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { OverviewItem } from '../lib/api.ts';
 import { chooseSemester } from '../currentSemester.ts';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 type Props = {
   title: string;
@@ -20,6 +20,7 @@ const line = (item: OverviewItem) => {
 };
 
 export const SemesterHeader = ({ title, detail, list, currentId, onChanged }: Props) => {
+  const styles = useStyles();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const current = list.find((item) => item.timetableId === currentId) ?? null;
@@ -88,14 +89,14 @@ export const SemesterHeader = ({ title, detail, list, currentId, onChanged }: Pr
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   header: { marginBottom: space.lg },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   title: { fontSize: 24, fontWeight: '700', color: colors.text },
   switch: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: space.md, paddingVertical: 6, maxWidth: '55%' },
   switchText: { fontSize: 14, color: colors.text, fontWeight: '500' },
   detail: { fontSize: 14, color: colors.muted, marginTop: space.xs },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: 14, borderTopRightRadius: 14, padding: space.lg, paddingBottom: space.xl, width: '100%', maxWidth: 560, alignSelf: 'center', maxHeight: '80%' },
   sheetTitle: { fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: space.md },
   sheetList: { flexGrow: 0 },
@@ -107,4 +108,4 @@ const styles = StyleSheet.create({
   tick: { color: colors.primary, fontSize: 16, fontWeight: '700' },
   add: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: space.md, alignItems: 'center', marginTop: space.xs },
   addText: { fontSize: 15, fontWeight: '600', color: colors.text },
-});
+}));

@@ -15,7 +15,7 @@ import { Dot } from '../ui/Controls.tsx';
 import { DateField } from '../ui/DateField.tsx';
 import { ErrorNotice } from '../ui/Notice.tsx';
 import { Muted, SectionTitle } from '../ui/Page.tsx';
-import { colors, space } from '../ui/theme.ts';
+import { makeStyles, space } from '../ui/theme.ts';
 
 type Props = {
   timetable: Timetable;
@@ -26,36 +26,43 @@ type Props = {
   children?: ReactNode;
 };
 
-const NumberBox = ({ label, value, onChange, invalid }: { label: string; value: string; onChange: (value: string) => void; invalid: boolean }) => (
-  <View style={styles.box}>
-    <Text style={styles.boxLabel}>{label}</Text>
-    <TextInput
-      value={value}
-      onChangeText={(text) => onChange(text.replace(/[^0-9]/g, ''))}
-      keyboardType="number-pad"
-      inputMode="numeric"
-      maxLength={5}
-      aria-label={label}
-      style={[styles.input, invalid ? styles.inputError : null]}
-    />
-  </View>
-);
+const NumberBox = ({ label, value, onChange, invalid }: { label: string; value: string; onChange: (value: string) => void; invalid: boolean }) => {
+  const styles = useStyles();
+  return (
+    <View style={styles.box}>
+      <Text style={styles.boxLabel}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={(text) => onChange(text.replace(/[^0-9]/g, ''))}
+        keyboardType="number-pad"
+        inputMode="numeric"
+        maxLength={5}
+        aria-label={label}
+        style={[styles.input, invalid ? styles.inputError : null]}
+      />
+    </View>
+  );
+};
 
-const Row = ({ title, colour, pair, error, onChange }: { title: string; colour: string | null; pair: CountPair; error: string | undefined; onChange: (pair: CountPair) => void }) => (
-  <View style={styles.row}>
-    <View style={styles.rowTitle}>
-      {colour !== null ? <Dot colour={colour} /> : null}
-      <Text style={styles.rowName}>{title}</Text>
+const Row = ({ title, colour, pair, error, onChange }: { title: string; colour: string | null; pair: CountPair; error: string | undefined; onChange: (pair: CountPair) => void }) => {
+  const styles = useStyles();
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowTitle}>
+        {colour !== null ? <Dot colour={colour} /> : null}
+        <Text style={styles.rowName}>{title}</Text>
+      </View>
+      <View style={styles.boxes}>
+        <NumberBox label={`${title} held`} value={pair.held} onChange={(held) => onChange({ ...pair, held })} invalid={Boolean(error)} />
+        <NumberBox label={`${title} attended`} value={pair.attended} onChange={(attended) => onChange({ ...pair, attended })} invalid={Boolean(error)} />
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
-    <View style={styles.boxes}>
-      <NumberBox label={`${title} held`} value={pair.held} onChange={(held) => onChange({ ...pair, held })} invalid={Boolean(error)} />
-      <NumberBox label={`${title} attended`} value={pair.attended} onChange={(attended) => onChange({ ...pair, attended })} invalid={Boolean(error)} />
-    </View>
-    {error ? <Text style={styles.error}>{error}</Text> : null}
-  </View>
-);
+  );
+};
 
 export const OfficialEditor = ({ timetable, subjects, initial, source, setup = false, children }: Props) => {
+  const styles = useStyles();
   const router = useRouter();
   const [form, setForm] = useState<OfficialForm>(initial);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -131,7 +138,7 @@ export const OfficialEditor = ({ timetable, subjects, initial, source, setup = f
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   header: { flexDirection: 'row', paddingHorizontal: space.md, marginBottom: space.xs },
   headerSpacer: { flex: 1 },
   headerLabel: { width: 76, textAlign: 'center', fontSize: 12, color: colors.muted, marginLeft: space.sm },
@@ -146,4 +153,4 @@ const styles = StyleSheet.create({
   inputError: { borderColor: colors.error },
   error: { width: '100%', color: colors.error, fontSize: 13, marginTop: space.xs },
   total: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: space.md },
-});
+}));

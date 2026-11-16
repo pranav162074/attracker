@@ -16,7 +16,7 @@ import { Dot, ListBox, ListRow } from '../../../../ui/Controls.tsx';
 import { DateField } from '../../../../ui/DateField.tsx';
 import { ErrorNotice } from '../../../../ui/Notice.tsx';
 import { LoadFailed, Loading, Muted, Page } from '../../../../ui/Page.tsx';
-import { colors, space } from '../../../../ui/theme.ts';
+import { makeStyles, space } from '../../../../ui/theme.ts';
 import { setupPath } from '../../../../lib/semester.ts';
 import { SetupIntro, SetupProgress } from '../../../../screens/SetupFrame.tsx';
 import { WeekOverview } from '../../../../screens/WeekOverview.tsx';
@@ -37,6 +37,7 @@ const loadAll = async (id: number): Promise<Loaded> => {
 };
 
 const Editor = ({ timetable, subjects, grid, setup }: Loaded & { setup: boolean }) => {
+  const styles = useStyles();
   const router = useRouter();
   const [saved] = useState(() => fromServer(grid.slots));
   const [draft, setDraft] = useState<DraftSlot[]>(saved);
@@ -245,13 +246,13 @@ export default function GridScreen() {
   return <Editor {...data} setup={isSetup(setup)} />;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   tabs: { gap: space.sm, paddingBottom: space.xs },
   tab: { minWidth: 56, alignItems: 'center', paddingVertical: space.sm, paddingHorizontal: space.sm, borderRadius: 6, borderWidth: 1, borderColor: colors.border },
   tabSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { fontSize: 14, color: colors.text, fontWeight: '600' },
   tabCount: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  tabTextSelected: { color: '#ffffff' },
+  tabTextSelected: { color: colors.onPrimary },
   weekendLink: { paddingVertical: space.sm, alignSelf: 'flex-start' },
   link: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   dayTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: space.lg, marginBottom: space.md },
@@ -261,11 +262,11 @@ const styles = StyleSheet.create({
   lostText: { fontSize: 15, color: colors.text, lineHeight: 21 },
   lostActions: { gap: space.md },
   total: { fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: space.sm },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: space.lg },
+  backdrop: { flex: 1, backgroundColor: colors.backdrop, justifyContent: 'center', padding: space.lg },
   sheet: { backgroundColor: colors.background, borderRadius: 10, padding: space.lg, width: '100%', maxWidth: 380, alignSelf: 'center' },
   sheetTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   sheetNote: { fontSize: 13, color: colors.muted, marginTop: space.xs, marginBottom: space.sm },
   sheetRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   sheetRowText: { fontSize: 15, color: colors.text },
   sheetRowCount: { fontSize: 14, color: colors.muted },
-});
+}));
