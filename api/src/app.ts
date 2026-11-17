@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { logger } from './config/logger.ts';
 import { env } from './config/env.ts';
-import { pingDatabase } from './db/pool.ts';
+import { pingDatabase, poolStats } from './db/pool.ts';
 import { HttpError } from './http/errors.ts';
 import { cors } from './middleware/cors.ts';
 import { fromProxy } from './middleware/proxy.ts';
@@ -45,7 +45,7 @@ app.get('/ready', async (req, res) => {
     await pingDatabase();
     res.json({ status: 'ok', database: 'ok' });
   } catch (error) {
-    req.log.warn({ err: error }, 'Readiness check failed');
+    req.log.warn({ err: error, pool: poolStats() }, 'Readiness check failed');
     res.status(503).json({ status: 'unavailable', database: 'unreachable' });
   }
 });
