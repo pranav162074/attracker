@@ -82,6 +82,8 @@ To try the Worker on this computer: `npm run build:web`, then `npx wrangler dev`
 
 The Worker also keeps the API awake. Render's free plan puts it to sleep after 15 minutes without requests, so a cron trigger in `wrangler.jsonc` asks the API for `/health` every 10 minutes from 01:00 to 18:59 UTC (6:30 am to 12:30 am in India), trying again a few times while it starts. That is about 560 hours a month, inside the free 750.
 
+Database connections time out on the client after 15 seconds, are kept alive with TCP keepalive and are replaced every 5 minutes, so a connection Neon has dropped is never reused. If 5 database calls in a row fail with a lost or hung connection, the API logs it and exits, and Render starts a fresh server on its own. `/ready` logs the pool's counts when it fails.
+
 **Android app (EAS Build).** `app/eas.json` has two profiles, both pointing the app at the Worker's `/api`. `preview` makes an APK to install directly, and `production` makes an app bundle for the Play Store. With a free Expo account, from the `app` folder:
 
 ```
